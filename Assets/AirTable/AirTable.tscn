@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://bmjwjcgjyks6r"]
+
+[ext_resource type="Script" path="res://Assets/AirTable/AirTable.gd" id="1"]
+
+[node name="AirTable" type="Node"]
+script = ExtResource("1")
+
+[node name="PublishIP" type="HTTPRequest" parent="."]
+
+[node name="GetIP" type="HTTPRequest" parent="."]
+
+[node name="GetServers" type="HTTPRequest" parent="."]
+timeout = 2.0
+
+[node name="DeleteOldServers" type="HTTPRequest" parent="."]
+timeout = 2.0
+
+[node name="GetKeys" type="HTTPRequest" parent="."]
+
+[connection signal="request_completed" from="PublishIP" to="." method="_on_publish_ip_request_completed"]
+[connection signal="request_completed" from="GetIP" to="." method="_on_get_ip_request_completed"]
+[connection signal="request_completed" from="GetServers" to="." method="_on_get_servers_request_completed"]
+[connection signal="request_completed" from="DeleteOldServers" to="." method="_on_delete_old_servers_request_completed"]
+[connection signal="request_completed" from="GetKeys" to="." method="_on_GetKeys_request_completed"]

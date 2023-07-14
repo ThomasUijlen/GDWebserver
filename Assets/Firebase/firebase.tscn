@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://bkstmdw1s0007"]
+
+[ext_resource type="Script" path="res://Assets/Firebase/Firebase.gd" id="1_o8heh"]
+
+[node name="Firebase" type="Node"]
+script = ExtResource("1_o8heh")
+
+[node name="Authenticate" type="HTTPRequest" parent="."]
+
+[node name="GetUsers" type="HTTPRequest" parent="."]
+
+[node name="PublishIP" type="HTTPRequest" parent="."]
+
+[node name="GetIP" type="HTTPRequest" parent="."]
+
+[node name="GetServers" type="HTTPRequest" parent="."]
+
+[connection signal="request_completed" from="Authenticate" to="." method="_on_authenticate_request_completed"]
+[connection signal="request_completed" from="GetUsers" to="." method="_on_get_users_request_completed"]
+[connection signal="request_completed" from="PublishIP" to="." method="_on_publish_ip_request_completed"]
+[connection signal="request_completed" from="GetIP" to="." method="_on_get_ip_request_completed"]
+[connection signal="request_completed" from="GetServers" to="." method="_on_get_servers_request_completed"]
