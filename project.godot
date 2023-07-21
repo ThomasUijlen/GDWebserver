@@ -11,15 +11,13 @@ config_version=5
 [application]
 
 config/name="GD-WebServer"
-run/main_scene="res://Main/gd_load_balancer.tscn"
+run/main_scene="res://Main/GDWebServer.tscn"
 config/features=PackedStringArray("4.0", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 Firebase="*res://Assets/Firebase/firebase.tscn"
-IPLibrary="*res://Assets/IP/IPLibrary.gd"
-KeyLibrary="*res://Assets/Encryption/KeyLibrary.gd"
 
 [dotnet]
 

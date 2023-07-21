@@ -1,1 +1,5 @@
-res://Main/gd_load_balancer.tscn
+res://Main/GDWebServer.tscn
+res://Main/GDWebServer.gd
+res://Assets/HTTP/GetPlayerCountRouter.gd
+res://Assets/HTTP/GetLiveDataRouter.gd
+res://Assets/Firebase/firebase.gd

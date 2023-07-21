@@ -3,46 +3,14 @@ extends Node
 var ID_TOKEN : String = ""
 var IP_ADDRESS : String = ""
 
+class HTTPData:
+	signal requestCompleted
+	var data
+
+var liveDataList : Dictionary = {}
+
 func _ready():
-	getIP()
 	authenticate()
-	getUsers()
-
-func getIP():
-	$GetIP.request("https://api.ipify.org")
-
-func _on_get_ip_request_completed(result, response_code, headers, body):
-	if response_code != 200:
-		await get_tree().create_timer(10.0).timeout
-		getIP()
-		return
-	IP_ADDRESS = body.get_string_from_utf8()
-	
-	publishIP.call_deferred()
-
-func publishIP():
-	if ID_TOKEN.length() == 0:
-		await get_tree().create_timer(10.0).timeout
-		publishIP.call_deferred()
-		return
-	
-	$PublishIP.request(
-		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Servers/"+IP_ADDRESS,
-		["Authorization: Bearer "+ID_TOKEN],
-		HTTPClient.METHOD_PATCH,
-		JSON.stringify(
-			{
-				"fields": {
-					"IP": {"stringValue": IP_ADDRESS},
-					"Age": {"integerValue": roundi(Time.get_unix_time_from_system())},
-					"Type": {"stringValue": "LoadBalancer"}
-				}
-			}
-		)
-	)
-	
-	await get_tree().create_timer(600).timeout
-	publishIP.call_deferred()
 
 func authenticate():
 	$Authenticate.request(
@@ -74,58 +42,59 @@ func _on_authenticate_request_completed(result, response_code, headers, body):
 	
 	authenticate.call_deferred()
 
-func getUsers():
-	if ID_TOKEN.length() == 0:
-		await get_tree().create_timer(10.0).timeout
-		getUsers.call_deferred()
-		return
+func getLiveData(memberID : String, keyName : String):
+	var data : HTTPData = HTTPData.new()
+	var request : HTTPRequest = HTTPRequest.new()
+	request.timeout = 5
+	request.request_completed.connect(_player_count_complete)
+	add_child(request)
 	
-	$GetUsers.request(
-		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users",
+	liveDataList[keyName] = data
+	
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName+"/LiveData",
 		["Authorization: Bearer "+ID_TOKEN],
 		HTTPClient.METHOD_GET
 	)
+	autoComplete(data)
+	await data.requestCompleted
+	request.queue_free()
+	liveDataList.erase(keyName)
+	return data.data
 
-func _on_get_users_request_completed(result, response_code, headers, body):
-	if response_code != 200:
-		await get_tree().create_timer(10.0).timeout
-		getUsers.call_deferred()
-		return
-	
+func autoComplete(data : HTTPData):
+	await get_tree().create_timer(5.0).timeout
+	data.requestCompleted.emit()
+
+func _player_count_complete(result, response_code, headers, body):
 	var test_json_conv = JSON.new()
 	test_json_conv.parse(body.get_string_from_utf8())
 	var json = test_json_conv.get_data()
+	
 	if json != null:
+		var httpData : HTTPData = null
+		for data in json["documents"]:
+			if httpData: break
+			for name in liveDataList:
+				if name in data["name"]:
+					httpData = liveDataList[name]
+					break
+		
+		var playerCount : int = 0
+		var lobbyCount : int = 0
+		var dataUsage : int = 0
 		for data in json["documents"]:
 			var fields = data["fields"]
-			KeyLibrary.addKey(fields["PublicKey"]["stringValue"], fields["PrivateKey"]["stringValue"])
-	
-	await get_tree().create_timer(600).timeout
-	getUsers.call_deferred()
-
-
-func _on_publish_ip_request_completed(result, response_code, headers, body):
-	pass
-
-func getServers():
-	$GetServers.request(
-		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Servers",
-		["Authorization: Bearer "+ID_TOKEN],
-		HTTPClient.METHOD_GET
-	)
-
-func _on_get_servers_request_completed(result, response_code, headers, body):
-	if response_code != 200:
-		await get_tree().create_timer(randf_range(31.0,50.0)).timeout
-		getServers()
-		return
-	
-	IPLibrary.clearServers()
-	
-	var test_json_conv = JSON.new()
-	test_json_conv.parse(body.get_string_from_utf8())
-	var json = test_json_conv.get_data()
-	if json != null:
-		for data in json["documents"]:
-			var fields = data["fields"]
-			IPLibrary.addServer(fields)
+			playerCount += int(fields["PlayerCount"]["integerValue"])
+			playerCount += int(fields["LobbyCount"]["integerValue"])
+			playerCount += int(fields["DataUsage"]["integerValue"])
+		
+		if httpData:
+			httpData.data = JSON.stringify(
+				{
+					"playercount" : playerCount,
+					"lobbycount" : lobbyCount,
+					"usage" : dataUsage,
+				}
+			)
+			httpData.requestCompleted.emit()
