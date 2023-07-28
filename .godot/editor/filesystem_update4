@@ -1,1 +1,6 @@
 res://Main/GDWebServer.tscn
+res://Assets/Firebase/firebase.gd
+res://Assets/HTTP/GetLiveDataRouter.gd
+res://Assets/HTTP/GetPlanData.gd
+res://Assets/HTTP/GetKeyData.gd
+res://Main/GDWebServer.gd

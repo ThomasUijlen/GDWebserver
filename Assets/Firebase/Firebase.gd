@@ -116,6 +116,7 @@ func getDailyData(memberID : String, keyName : String):
 	)
 	
 	var result = await request.request_completed
+	var currentDay : int = floor(Time.get_unix_time_from_system()/86400)
 	
 	if result[1] == 200:
 		var test_json_conv = JSON.new()
@@ -125,8 +126,11 @@ func getDailyData(memberID : String, keyName : String):
 		if json != null:
 			for data in json["documents"]:
 				var fields = data["fields"]
-				if resultData.has(fields["Day"]["integerValue"]):
-					var dayData = resultData[fields["Day"]]
+				var day : int = int(fields["Day"]["integerValue"])
+				if day < currentDay - 30: continue
+				
+				if resultData.has(day):
+					var dayData = resultData[day]
 					dayData["playercount"] += int(fields["PlayerCount"]["integerValue"])
 					dayData["lobbiesopened"] += int(fields["LobbiesOpened"]["integerValue"])
 					dayData["usage"] += int(fields["DataUsage"]["integerValue"])
@@ -135,7 +139,97 @@ func getDailyData(memberID : String, keyName : String):
 					dayData["playercount"] = int(fields["PlayerCount"]["integerValue"])
 					dayData["lobbiesopened"] = int(fields["LobbiesOpened"]["integerValue"])
 					dayData["usage"] = int(fields["DataUsage"]["integerValue"])
-					resultData[fields["Day"]["integerValue"]] = dayData
+					resultData[day] = dayData
+	
+	request.queue_free()
+	return resultData
+
+func getKeyData(memberID : String, keyName : String):
+	var resultData = {}
+	var request : HTTPRequest = HTTPRequest.new()
+	request.timeout = 5
+	add_child(request)
+	
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName,
+		["Authorization: Bearer "+ID_TOKEN],
+		HTTPClient.METHOD_GET
+	)
+	
+	var result = await request.request_completed
+	
+	if result[1] == 200:
+		var test_json_conv = JSON.new()
+		test_json_conv.parse(result[3].get_string_from_utf8())
+		var json = test_json_conv.get_data()
+		
+		if json != null:
+			var fields = json["fields"]
+			resultData["Name"] = fields["Name"]["stringValue"]
+			resultData["PublicKey"] = fields["PublicKey"]["stringValue"]
+			resultData["PrivateKey"] = fields["PrivateKey"]["stringValue"]
+	
+	request.queue_free()
+	return resultData
+
+
+
+func getPlanData(memberID : String):
+	var resultData : Dictionary = {
+		"Name" : "None",
+		"DataCap" : 0,
+		"KeyCap": 0,
+	}
+	
+	var request : HTTPRequest = HTTPRequest.new()
+	request.timeout = 10
+	add_child(request)
+	
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/Plans",
+		["Authorization: Bearer "+ID_TOKEN],
+		HTTPClient.METHOD_GET
+	)
+	
+	var result = await request.request_completed
+	
+	var newestPlan = null
+	var planName : String = "free"
+	
+	if result[1] == 200:
+		var test_json_conv = JSON.new()
+		test_json_conv.parse(result[3].get_string_from_utf8())
+		var json = test_json_conv.get_data()
+		
+		if json != null:
+			if json.has("documents"):
+				for data in json["documents"]:
+					var fields = data["fields"]
+					var time = int(fields["EndTimestamp"]["stringValue"])
+					if time < Time.get_unix_time_from_system(): continue
+					if newestPlan == null || int(newestPlan["EndTimestamp"]["stringValue"]) < time:
+						newestPlan = fields
+						planName = fields["Plan"]["stringValue"]
+	
+	if newestPlan:
+		request.request(
+			"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Plans/"+planName,
+			["Authorization: Bearer "+ID_TOKEN],
+			HTTPClient.METHOD_GET
+		)
+		
+		result = await request.request_completed
+		
+		if result[1] == 200:
+			var test_json_conv = JSON.new()
+			test_json_conv.parse(result[3].get_string_from_utf8())
+			var json = test_json_conv.get_data()
+			
+			if json != null:
+				var fields = json["fields"]
+				resultData["Name"] = json["name"].get_file()
+				resultData["DataCap"] = int(fields["DataCap"]["integerValue"])
+				resultData["KeyCap"] = int(fields["KeyCap"]["integerValue"])
 	
 	request.queue_free()
 	return resultData

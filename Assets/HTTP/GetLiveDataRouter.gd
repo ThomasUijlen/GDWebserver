@@ -21,6 +21,8 @@ func handle_get(request, response):
 		liveData = await Firebase.getLiveData(request.query["memberid"], request.query["key"])
 	
 	if liveData != null:
+		
+		
 		response.send(200, JSON.stringify(liveData))
 	else:
 		response.send(401)
