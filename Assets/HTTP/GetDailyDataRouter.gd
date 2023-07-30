@@ -4,7 +4,7 @@ class_name GetDailyData
 func handle_get(request, response):
 	var liveData = {}
 	
-	if request.query["key"] == "All":
+	if request.query["key"] == "All" || request.query["key"] == "all":
 		var keys = await Firebase.getAllKeys(request.query["memberid"])
 		
 		for key in keys:

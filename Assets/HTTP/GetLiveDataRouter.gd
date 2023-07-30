@@ -4,7 +4,7 @@ class_name GetLiveData
 func handle_get(request, response):
 	var liveData = null
 	
-	if request.query["key"] == "All":
+	if request.query["key"] == "All" || request.query["key"] == "all":
 		var keys = await Firebase.getAllKeys(request.query["memberid"])
 		liveData = {
 			"playercount" : 0,
