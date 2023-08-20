@@ -2,23 +2,25 @@ extends HttpRouter
 class_name GetDailyData
 
 func handle_get(request, response):
-	var liveData = {}
+	var dailyData : Dictionary = {}
+	var targetKeys : int = 0
 	
-	if request.query["key"] == "All" || request.query["key"] == "all":
-		var keys = await Firebase.getAllKeys(request.query["memberid"])
-		
-		for key in keys:
-			var keyData : Dictionary = {}
-			liveData[key.get_file()] = keyData
-			keyData["MonthlyData"] = await Firebase.getDailyData(request.query["memberid"], key.get_file())
-			keyData["Name"] = (await Firebase.getKeyData(request.query["memberid"], key.get_file()))["Name"]
-	else:
+	var keys = await Firebase.getAllKeys(request.query["memberid"])
+	targetKeys = keys.size()
+	
+	for key in keys:
 		var keyData : Dictionary = {}
-		liveData[request.query["key"].get_file()] = keyData
-		keyData["MonthlyData"] = await Firebase.getDailyData(request.query["memberid"], request.query["key"])
-		keyData["Name"] = (await Firebase.getKeyData(request.query["memberid"], request.query["key"]))["Name"]
+		Firebase.getKeyName(request.query["memberid"], key.get_file(), keyData)
+		Firebase.getDailyData(request.query["memberid"], key.get_file(), dailyData, keyData)
 	
-	if liveData != null:
-		response.send(200, JSON.stringify(liveData))
+	var i : int = 0
+	while i < 50:
+		i += 1
+		await Firebase.get_tree().create_timer(0.2).timeout
+		if dailyData.size() == targetKeys:
+			break
+	await Firebase.get_tree().create_timer(0.1).timeout
+	if dailyData != null:
+		response.send(200, JSON.stringify(dailyData))
 	else:
 		response.send(401)

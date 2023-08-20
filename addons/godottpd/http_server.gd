@@ -33,16 +33,11 @@ var _header_regex: RegEx = RegEx.new()
 # The base path used in a project to serve files
 var _local_base_path: String = "res://src"
 
-var threadPool : ThreadPool = ThreadPool.new()
-
 # Compile the required regex
 func _init(_logging: bool = false) -> void:
 	self._logging = _logging
 	_method_regex.compile("^(?<method>GET|POST|HEAD|PUT|PATCH|DELETE|OPTIONS) (?<path>[^ ]+) HTTP/1.1$")
 	_header_regex.compile("^(?<key>[^:]+): (?<value>.+)$")
-
-func _ready():
-	add_child(threadPool)
 
 # Print a debug message in console, if the debug mode is enabled
 # 
@@ -89,7 +84,7 @@ func _process(_delta: float) -> void:
 					self._handle_request(client, request_string)
 
 func remove_client(client):
-	await get_tree().create_timer(20.0).timeout
+	await get_tree().create_timer(10.0).timeout
 	_clients.erase(client)
 	client.disconnect_from_host()
 
@@ -168,8 +163,8 @@ func _perform_current_request(client: StreamPeer, request: HttpRequest):
 			match request.method:
 				"GET":
 					found = true
-					threadPool.requestFunctionCall(router.router, "handle_get", [request, response])
-#					router.router.handle_get(request, response)
+#					threadPool.requestFunctionCall(router.router, "handle_get", [request, response])
+					router.router.handle_get(request, response)
 				"POST":
 					found = true
 					router.router.handle_post(request, response)

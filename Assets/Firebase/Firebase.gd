@@ -7,6 +7,43 @@ func _ready():
 	authenticate()
 	randomize()
 
+func firebaseGet(url : String) -> Array:
+	var request : HTTPRequest = HTTPRequest.new()
+	request.timeout = 5
+	add_child(request)
+	
+	var jsonArray : Array = []
+	var firstRequest : bool = true
+	var pageToken : String = ""
+	
+	while firstRequest || pageToken != "":
+		firstRequest = false
+		var currentUrl : String = url
+		if pageToken != "":
+			currentUrl += "?pageToken="+pageToken
+		
+		request.request(
+			currentUrl,
+			["Authorization: Bearer "+ID_TOKEN],
+			HTTPClient.METHOD_GET
+		)
+		pageToken = ""
+		
+		var result = await request.request_completed
+		if result[1] == 200:
+			var test_json_conv = JSON.new()
+			test_json_conv.parse(result[3].get_string_from_utf8())
+			var json = test_json_conv.get_data()
+			if json != null:
+				jsonArray.append(json)
+				
+				if json.has("nextPageToken"):
+					pageToken = json["nextPageToken"]
+	
+	request.queue_free()
+	
+	return jsonArray
+
 func authenticate():
 	$Authenticate.request(
 		"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+ServerConfigs.API_KEY,
@@ -39,113 +76,95 @@ func _on_authenticate_request_completed(result, response_code, headers, body):
 
 func getAllKeys(memberID : String):
 	var resultData : Array = []
-	var request : HTTPRequest = HTTPRequest.new()
-	request.timeout = 5
-	add_child(request)
 	
-	request.request(
-		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys",
-		["Authorization: Bearer "+ID_TOKEN],
-		HTTPClient.METHOD_GET
+	var jsonArray : Array = await firebaseGet(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys"
 	)
 	
-	var result = await request.request_completed
+	for json in jsonArray:
+		if json.has("documents"):
+			for data in json["documents"]:
+				resultData.append(data["name"])
 	
-	if result[1] == 200:
-		var test_json_conv = JSON.new()
-		test_json_conv.parse(result[3].get_string_from_utf8())
-		var json = test_json_conv.get_data()
-		
-		if json != null:
-			if json.has("documents"):
-				for data in json["documents"]:
-					resultData.append(data["name"])
-	
-	request.queue_free()
 	return resultData
 
-func getLiveData(memberID : String, keyName : String):
+func getAllKeyData(memberID : String):
+	var resultData : Dictionary = {}
+	
+	var jsonArray : Array = await firebaseGet(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys"
+	)
+	
+	for json in jsonArray:
+		if json.has("documents"):
+			for data in json["documents"]:
+				var keyData : Dictionary = {}
+				var fields = data["fields"]
+				keyData["Name"] = fields["Name"]["stringValue"]
+				keyData["PublicKey"] = fields["PublicKey"]["stringValue"]
+				keyData["PrivateKey"] = fields["PrivateKey"]["stringValue"]
+				resultData[data["name"].get_file()] = keyData
+	
+	return resultData
+
+func getLiveData(memberID : String, keyName : String, liveData : Dictionary):
 	var resultData = null
-	var request : HTTPRequest = HTTPRequest.new()
-	request.timeout = 5
-	add_child(request)
 	
-	request.request(
-		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName+"/LiveData",
-		["Authorization: Bearer "+ID_TOKEN],
-		HTTPClient.METHOD_GET
+	var jsonArray : Array = await firebaseGet(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName+"/LiveData"
 	)
 	
-	var result = await request.request_completed
-	
-	if result[1] == 200:
-		var test_json_conv = JSON.new()
-		test_json_conv.parse(result[3].get_string_from_utf8())
-		var json = test_json_conv.get_data()
+	for json in jsonArray:
+		var playerCount : int = 0
+		var lobbyCount : int = 0
+		var dataUsage : int = 0
+		if json.has("documents"):
+			for data in json["documents"]:
+				var fields = data["fields"]
+				playerCount += int(fields["PlayerCount"]["integerValue"])
+				lobbyCount += int(fields["LobbyCount"]["integerValue"])
+				dataUsage += int(fields["DataUsage"]["integerValue"])
 		
-		if json != null:
-			var playerCount : int = 0
-			var lobbyCount : int = 0
-			var dataUsage : int = 0
-			if json.has("documents"):
-				for data in json["documents"]:
-					var fields = data["fields"]
-					playerCount += int(fields["PlayerCount"]["integerValue"])
-					lobbyCount += int(fields["LobbyCount"]["integerValue"])
-					dataUsage += int(fields["DataUsage"]["integerValue"])
-			
-			resultData = {
-				"playercount" : playerCount,
-				"lobbycount" : lobbyCount,
-				"usage" : dataUsage,
-			}
-	
-	request.queue_free()
-	return resultData
+		liveData["playercount"] += playerCount
+		liveData["lobbycount"] += lobbyCount
+		liveData["usage"] += dataUsage
+		liveData["keys"] += 1
 
 
 
-func getDailyData(memberID : String, keyName : String):
+func getDailyData(memberID : String, keyName : String, dailyData : Dictionary, keyData : Dictionary):
 	var resultData = {}
-	var request : HTTPRequest = HTTPRequest.new()
-	request.timeout = 5
-	add_child(request)
-	
-	request.request(
-		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName+"/DailyData",
-		["Authorization: Bearer "+ID_TOKEN],
-		HTTPClient.METHOD_GET
-	)
-	
-	var result = await request.request_completed
 	var currentDay : int = floor(Time.get_unix_time_from_system()/86400)
 	
-	if result[1] == 200:
-		var test_json_conv = JSON.new()
-		test_json_conv.parse(result[3].get_string_from_utf8())
-		var json = test_json_conv.get_data()
-		
-		if json != null:
-			if json.has("documents"):
-				for data in json["documents"]:
-					var fields = data["fields"]
-					var day : int = int(fields["Day"]["integerValue"])
-					if day < currentDay - 30: continue
-					
-					if resultData.has(day):
-						var dayData = resultData[day]
-						dayData["playercount"] += int(fields["PlayerCount"]["integerValue"])
-						dayData["lobbiesopened"] += int(fields["LobbiesOpened"]["integerValue"])
-						dayData["usage"] += int(fields["DataUsage"]["integerValue"])
-					else:
-						var dayData = {}
-						dayData["playercount"] = int(fields["PlayerCount"]["integerValue"])
-						dayData["lobbiesopened"] = int(fields["LobbiesOpened"]["integerValue"])
-						dayData["usage"] = int(fields["DataUsage"]["integerValue"])
-						resultData[day] = dayData
+	var jsonArray : Array = await firebaseGet(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName+"/DailyData"
+	)
 	
-	request.queue_free()
-	return resultData
+	for json in jsonArray:
+		if json.has("documents"):
+			for data in json["documents"]:
+				var fields = data["fields"]
+				var day : int = int(fields["Day"]["integerValue"])
+#					print("-------")
+#					print(day)
+#					print(currentDay - 30)
+#					print(day < currentDay - 30)
+#					if day < currentDay - 30: continue
+				
+				if resultData.has(day):
+					var dayData = resultData[day]
+					dayData["playercount"] += int(fields["PlayerCount"]["integerValue"])
+					dayData["lobbiesopened"] += int(fields["LobbiesOpened"]["integerValue"])
+					dayData["usage"] += int(fields["DataUsage"]["integerValue"])
+				else:
+					var dayData = {}
+					dayData["playercount"] = int(fields["PlayerCount"]["integerValue"])
+					dayData["lobbiesopened"] = int(fields["LobbiesOpened"]["integerValue"])
+					dayData["usage"] = int(fields["DataUsage"]["integerValue"])
+					resultData[day] = dayData
+	
+	keyData["MonthlyData"] = resultData
+	dailyData[keyName] = keyData
 
 func getKeyData(memberID : String, keyName : String):
 	var resultData = {}
@@ -175,7 +194,29 @@ func getKeyData(memberID : String, keyName : String):
 	request.queue_free()
 	return resultData
 
-
+func getKeyName(memberID : String, keyName : String, targetData : Dictionary):
+	var request : HTTPRequest = HTTPRequest.new()
+	request.timeout = 5
+	add_child(request)
+	
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName,
+		["Authorization: Bearer "+ID_TOKEN],
+		HTTPClient.METHOD_GET
+	)
+	
+	var result = await request.request_completed
+	
+	if result[1] == 200:
+		var test_json_conv = JSON.new()
+		test_json_conv.parse(result[3].get_string_from_utf8())
+		var json = test_json_conv.get_data()
+		
+		if json != null:
+			var fields = json["fields"]
+			targetData["Name"] = fields["Name"]["stringValue"]
+	
+	request.queue_free()
 
 func getPlanData(memberID : String):
 	var resultData : Dictionary = {
@@ -214,29 +255,52 @@ func getPlanData(memberID : String):
 						newestPlan = fields
 						planName = fields["Plan"]["stringValue"]
 	
-	if newestPlan:
-		request.request(
-			"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Plans/"+planName,
-			["Authorization: Bearer "+ID_TOKEN],
-			HTTPClient.METHOD_GET
-		)
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Plans/"+planName,
+		["Authorization: Bearer "+ID_TOKEN],
+		HTTPClient.METHOD_GET
+	)
+	
+	result = await request.request_completed
+	
+	if result[1] == 200:
+		var test_json_conv = JSON.new()
+		test_json_conv.parse(result[3].get_string_from_utf8())
+		var json = test_json_conv.get_data()
 		
-		result = await request.request_completed
-		
-		if result[1] == 200:
-			var test_json_conv = JSON.new()
-			test_json_conv.parse(result[3].get_string_from_utf8())
-			var json = test_json_conv.get_data()
+		if json != null:
+			var fields = json["fields"]
+			resultData["Name"] = json["name"].get_file()
+			resultData["DataCap"] = int(fields["DataCap"]["integerValue"])
+			resultData["KeyCap"] = int(fields["KeyCap"]["integerValue"])
 			
-			if json != null:
-				var fields = json["fields"]
-				resultData["Name"] = json["name"].get_file()
-				resultData["DataCap"] = int(fields["DataCap"]["integerValue"])
-				resultData["KeyCap"] = int(fields["KeyCap"]["integerValue"])
+			if newestPlan:
+				resultData["ResetTime"] = time_until_reset(int(newestPlan["EndTimestamp"]["stringValue"]))
+			else:
+				resultData["ResetTime"] = time_until_reset(int(floor(Time.get_unix_time_from_system()/86400)+1)*86400)
 	
 	request.queue_free()
 	return resultData
 
+func time_until_reset(target_time: int) -> String:
+	var seconds_left = target_time - Time.get_unix_time_from_system()
+	
+	if seconds_left <= 0:
+		return "Time has already passed."
+	
+	var hours_left = ceil(seconds_left / 3600.0)
+	
+	if hours_left > 24:
+		var days_left = int(hours_left / 24)
+		if days_left == 1:
+			return "1 day until reset."
+		else:
+			return str(days_left) + " days until reset."
+	else:
+		if hours_left == 1:
+			return "1 hour until reset."
+		else:
+			return str(int(hours_left)) + " hours until reset."
 
 
 func createAPIKey(memberID : String, keyName : String):
