@@ -2,6 +2,10 @@ extends HttpRouter
 class_name GetLiveData
 
 func handle_get(request, response):
+	if !(await Firebase.memberExists(request.query["memberid"])):
+		response.send(403)
+		return
+	
 	var liveData = {
 		"playercount" : 0,
 		"lobbycount" : 0,

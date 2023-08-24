@@ -1,3 +1,8 @@
 res://Main/GDWebServer.tscn
 res://Assets/Firebase/firebase.gd
-res://Assets/HTTP/GetKeyData.gd
+res://Assets/HTTP/CreateAPIKey.gd
+res://Assets/HTTP/GetPlanData.gd
+res://Assets/HTTP/GetLiveDataRouter.gd
+res://Assets/HTTP/GetDailyDataRouter.gd
+res://Assets/HTTP/DeleteAPIKey.gd
+res://Assets/HTTP/RenameAPIKey.gd

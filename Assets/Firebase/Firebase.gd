@@ -71,8 +71,33 @@ func _on_authenticate_request_completed(result, response_code, headers, body):
 		ID_TOKEN = json["idToken"]
 		var expiresIn : float = float(json["expiresIn"])
 		await get_tree().create_timer(expiresIn-60).timeout
+		authenticate.call_deferred()
+	else:
+		await get_tree().create_timer(10.0).timeout
+		authenticate.call_deferred()
+
+func memberExists(memberID : String) -> bool:
+	var resultData = {}
+	var request : HTTPRequest = HTTPRequest.new()
+	request.timeout = 5
+	add_child(request)
 	
-	authenticate.call_deferred()
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID,
+		["Authorization: Bearer "+ID_TOKEN],
+		HTTPClient.METHOD_GET
+	)
+	
+	var result = await request.request_completed
+	
+	if result[1] == 200:
+		var test_json_conv = JSON.new()
+		test_json_conv.parse(result[3].get_string_from_utf8())
+		var json = test_json_conv.get_data()
+		
+		if json != null:
+			return true
+	return false
 
 func getAllKeys(memberID : String):
 	var resultData : Array = []
@@ -114,21 +139,21 @@ func getLiveData(memberID : String, keyName : String, liveData : Dictionary):
 		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys/"+keyName+"/LiveData"
 	)
 	
+	var playerCount : int = 0
+	var lobbyCount : int = 0
+	var dataUsage : int = 0
 	for json in jsonArray:
-		var playerCount : int = 0
-		var lobbyCount : int = 0
-		var dataUsage : int = 0
 		if json.has("documents"):
 			for data in json["documents"]:
 				var fields = data["fields"]
 				playerCount += int(fields["PlayerCount"]["integerValue"])
 				lobbyCount += int(fields["LobbyCount"]["integerValue"])
 				dataUsage += int(fields["DataUsage"]["integerValue"])
-		
-		liveData["playercount"] += playerCount
-		liveData["lobbycount"] += lobbyCount
-		liveData["usage"] += dataUsage
-		liveData["keys"] += 1
+	
+	liveData["playercount"] += playerCount
+	liveData["lobbycount"] += lobbyCount
+	liveData["usage"] += dataUsage
+	liveData["keys"] += 1
 
 
 
@@ -149,7 +174,7 @@ func getDailyData(memberID : String, keyName : String, dailyData : Dictionary, k
 #					print(day)
 #					print(currentDay - 30)
 #					print(day < currentDay - 30)
-#					if day < currentDay - 30: continue
+				if day < currentDay - 30: continue
 				
 				if resultData.has(day):
 					var dayData = resultData[day]
@@ -356,6 +381,42 @@ func renameAPIKey(memberID : String, key : String, keyName : String):
 	var result = await request.request_completed
 	request.queue_free()
 	return result[1] == 200
+
+func markPlayerChanged(memberID : String):
+	var request : HTTPRequest = HTTPRequest.new()
+	request.timeout = 5
+	add_child(request)
+	
+	var playerData : Dictionary = {}
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID,
+		["Authorization: Bearer "+ID_TOKEN],
+		HTTPClient.METHOD_GET
+	)
+	
+	var result = await request.request_completed
+	if result[1] == 200:
+		var test_json_conv = JSON.new()
+		test_json_conv.parse(result[3].get_string_from_utf8())
+		var json = test_json_conv.get_data()
+		
+		if json != null:
+			var fields = json["fields"]
+			fields["Changed"]["integerValue"] = int(Time.get_unix_time_from_system())
+			
+			request.request(
+				"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID,
+				["Authorization: Bearer "+ID_TOKEN],
+				HTTPClient.METHOD_PATCH,
+				JSON.stringify(
+					{
+						"fields": fields
+					}
+				)
+			)
+			
+			await request.request_completed
+	request.queue_free()
 
 func deleteAPIKey(memberID : String, key : String):
 	var request : HTTPRequest = HTTPRequest.new()

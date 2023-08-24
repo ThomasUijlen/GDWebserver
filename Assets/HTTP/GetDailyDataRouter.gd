@@ -2,6 +2,10 @@ extends HttpRouter
 class_name GetDailyData
 
 func handle_get(request, response):
+	if !(await Firebase.memberExists(request.query["memberid"])):
+		response.send(403)
+		return
+	
 	var dailyData : Dictionary = {}
 	var targetKeys : int = 0
 	
