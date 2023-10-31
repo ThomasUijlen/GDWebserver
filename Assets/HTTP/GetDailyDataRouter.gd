@@ -12,16 +12,19 @@ func handle_get(request, response):
 	var keys = await Firebase.getAllKeys(request.query["memberid"])
 	targetKeys = keys.size()
 	
+	var keyModifier : int = 0
 	for key in keys:
 		var keyData : Dictionary = {}
-		Firebase.getKeyName(request.query["memberid"], key.get_file(), keyData)
-		Firebase.getDailyData(request.query["memberid"], key.get_file(), dailyData, keyData)
+		var keyName : String = key.get_file()
+		if keyName == "Default": keyModifier = -1
+		Firebase.getKeyName(request.query["memberid"], keyName, keyData)
+		Firebase.getDailyData(request.query["memberid"], keyName, dailyData, keyData)
 	
 	var i : int = 0
-	while i < 50:
+	while i < 20:
 		i += 1
 		await Firebase.get_tree().create_timer(0.2).timeout
-		if dailyData.size() == targetKeys:
+		if dailyData.size() == targetKeys+keyModifier:
 			break
 	await Firebase.get_tree().create_timer(0.1).timeout
 	if dailyData != null:

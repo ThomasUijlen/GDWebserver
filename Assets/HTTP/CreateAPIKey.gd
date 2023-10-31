@@ -8,7 +8,12 @@ func handle_post(request, response):
 	
 	var data : Dictionary = await Firebase.getPlanData(request.query["memberid"])
 	var keys : Array = await Firebase.getAllKeys(request.query["memberid"])
-	if keys.size() < data["KeyCap"]:
+	var keyModifier : int = 0
+	for key in keys:
+		if key.get_file() == "Default":
+			keyModifier = 1
+	
+	if keys.size() < data["KeyCap"]+keyModifier:
 		await Firebase.createAPIKey(request.query["memberid"], str(request.query["keyname"]))
 		Firebase.markPlayerChanged(request.query["memberid"])
 		response.send(200)

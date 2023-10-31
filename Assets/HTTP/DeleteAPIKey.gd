@@ -6,6 +6,6 @@ func handle_delete(request, response):
 		response.send(403)
 		return
 	
-	var succes : bool = await Firebase.deleteAPIKey(request.query["memberid"], request.query["key"])
-	if succes: Firebase.markPlayerChanged(request.query["memberid"])
-	response.send(200 if succes else 404)
+	Firebase.deleteAPIKey(request.query["memberid"], request.query["key"])
+	Firebase.markPlayerChanged(request.query["memberid"])
+	response.send(200)
