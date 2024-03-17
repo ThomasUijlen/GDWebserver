@@ -1,7 +1,24 @@
 extends HttpRouter
 class_name GetLiveData
 
+var lastTime : int = 0
+var liveCache : Dictionary = {}
+
 func handle_get(request, response):
+	if Firebase.flooded():
+		response.send(429)
+		return
+	
+	var time = Time.get_unix_time_from_system()
+	var currentTime = int(floor(time/120))
+	if currentTime != lastTime:
+		lastTime = currentTime
+		liveCache.clear()
+	
+	if(liveCache.has(request.query["memberid"])):
+		response.send(200, liveCache[request.query["memberid"]])
+		return
+	
 	if !(await Firebase.memberExists(request.query["memberid"])):
 		response.send(403)
 		return
@@ -31,4 +48,6 @@ func handle_get(request, response):
 		if liveData["keys"] == targetKeys:
 			break
 	
-	response.send(200, JSON.stringify(liveData))
+	var jsonString : String = JSON.stringify(liveData)
+	liveCache[request.query["memberid"]] = jsonString
+	response.send(200, jsonString)

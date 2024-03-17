@@ -7,6 +7,11 @@ func _ready():
 	authenticate()
 	randomize()
 
+var counter : float = 0.0
+func _process(delta):
+	counter -= delta*1000.0
+	if counter < 0.0: counter = 0.0
+
 func firebaseGet(url : String) -> Array:
 	var request : HTTPRequest = HTTPRequest.new()
 	request.timeout = 5
@@ -100,6 +105,21 @@ func memberExists(memberID : String) -> bool:
 			return true
 	return false
 
+func getAllMembers():
+	var resultData : Array = []
+	
+	var jsonArray : Array = await firebaseGet(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users"
+	)
+	
+	for json in jsonArray:
+		if json.has("documents"):
+			for data in json["documents"]:
+				counter += 1.0
+				resultData.append(data["fields"]["MemberID"]["stringValue"])
+	
+	return resultData
+
 func getAllKeys(memberID : String):
 	var resultData : Array = []
 	
@@ -110,6 +130,8 @@ func getAllKeys(memberID : String):
 	for json in jsonArray:
 		if json.has("documents"):
 			for data in json["documents"]:
+				counter += 1.0
+				
 				resultData.append(data["name"])
 	
 	return resultData
@@ -124,6 +146,8 @@ func getAllKeyData(memberID : String):
 	for json in jsonArray:
 		if json.has("documents"):
 			for data in json["documents"]:
+				counter += 1.0
+				
 				var keyData : Dictionary = {}
 				var fields = data["fields"]
 				if !fields.has("PublicKey"): continue
@@ -148,6 +172,8 @@ func getLiveData(memberID : String, keyName : String, liveData : Dictionary):
 	for json in jsonArray:
 		if json.has("documents"):
 			for data in json["documents"]:
+				counter += 1.0
+				
 				var fields = data["fields"]
 				var validTime : int = int(fields["ValidTime"]["integerValue"])
 				if currentTime > validTime: continue
@@ -175,6 +201,8 @@ func getDailyData(memberID : String, keyName : String, dailyData : Dictionary, k
 	for json in jsonArray:
 		if json.has("documents"):
 			for data in json["documents"]:
+				counter += 1.0
+				
 				var fields = data["fields"]
 				var day : int = int(fields["Day"]["integerValue"])
 #					print("-------")
@@ -219,6 +247,8 @@ func getKeyData(memberID : String, keyName : String):
 		var json = test_json_conv.get_data()
 		
 		if json != null:
+			counter += 1.0
+			
 			var fields = json["fields"]
 			resultData["Name"] = fields["Name"]["stringValue"]
 			resultData["PublicKey"] = fields["PublicKey"]["stringValue"]
@@ -247,6 +277,8 @@ func getKeyName(memberID : String, keyName : String, targetData : Dictionary):
 		var json = test_json_conv.get_data()
 		
 		if json != null:
+			counter += 1.0
+			
 			var fields = json["fields"]
 			targetData["Name"] = fields["Name"]["stringValue"]
 	
@@ -282,6 +314,8 @@ func getPlanData(memberID : String):
 		if json != null:
 			if json.has("documents"):
 				for data in json["documents"]:
+					counter += 1.0
+					
 					var fields = data["fields"]
 					var time = int(fields["EndTimestamp"]["stringValue"])
 					if time < Time.get_unix_time_from_system(): continue
@@ -303,6 +337,8 @@ func getPlanData(memberID : String):
 		var json = test_json_conv.get_data()
 		
 		if json != null:
+			counter += 1.0
+			
 			var fields = json["fields"]
 			resultData["Name"] = json["name"].get_file()
 			resultData["DataCap"] = int(fields["DataCap"]["integerValue"])
@@ -361,6 +397,8 @@ func createAPIKey(memberID : String, keyName : String):
 		)
 	)
 	
+	counter += 5.0
+	
 	var result = await request.request_completed
 	request.queue_free()
 	return result[1] == 200
@@ -390,6 +428,8 @@ func renameAPIKey(memberID : String, key : String, keyName : String):
 		)
 	)
 	
+	counter += 5.0
+	
 	var result = await request.request_completed
 	request.queue_free()
 	return result[1] == 200
@@ -414,6 +454,7 @@ func markPlayerChanged(memberID : String):
 		
 		if json != null:
 			var fields = json["fields"]
+			if !fields.has("Changed"): fields["Changed"] = {"integerValue" : 0}
 			fields["Changed"]["integerValue"] = int(Time.get_unix_time_from_system())
 			
 			request.request(
@@ -426,6 +467,8 @@ func markPlayerChanged(memberID : String):
 					}
 				)
 			)
+			
+			counter += 5.0
 			
 			await request.request_completed
 	request.queue_free()
@@ -506,6 +549,8 @@ func deleteAPIKey(memberID : String, key : String):
 	)
 	await request.request_completed
 	
+	counter += 30.0
+	
 	request.queue_free()
 
 
@@ -529,3 +574,5 @@ func generateUniqueID() -> String:
 		b[6], b[7]
 	]
 
+func flooded() -> bool:
+	return counter > 1000

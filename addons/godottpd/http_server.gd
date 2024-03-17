@@ -84,7 +84,7 @@ func _process(_delta: float) -> void:
 					self._handle_request(client, request_string)
 
 func remove_client(client):
-	await get_tree().create_timer(10.0).timeout
+	await get_tree().create_timer(60.0).timeout
 	_clients.erase(client)
 	client.disconnect_from_host()
 
@@ -163,7 +163,6 @@ func _perform_current_request(client: StreamPeer, request: HttpRequest):
 			match request.method:
 				"GET":
 					found = true
-#					threadPool.requestFunctionCall(router.router, "handle_get", [request, response])
 					router.router.handle_get(request, response)
 				"POST":
 					found = true
