@@ -344,6 +344,9 @@ func getPlanData(memberID : String):
 			resultData["DataCap"] = int(fields["DataCap"]["integerValue"])
 			resultData["KeyCap"] = int(fields["KeyCap"]["integerValue"])
 			
+			resultData["DatabaseLimit"] = int(fields["DatabaseLimit"]["integerValue"])
+			resultData["StorageLimit"] = int(fields["StorageLimit"]["integerValue"])
+			
 			if newestPlan:
 				resultData["ResetTime"] = time_until_reset(int(newestPlan["EndTimestamp"]["stringValue"]))
 				resultData["ResetUnix"] = int(newestPlan["EndTimestamp"]["stringValue"])
@@ -403,9 +406,10 @@ func createAPIKey(memberID : String, keyName : String):
 	request.queue_free()
 	return result[1] == 200
 
-func renameAPIKey(memberID : String, key : String, keyName : String):
+func updateAPIKey(memberID : String, key : String, keyName : String, database : String):
 	if key == "Default": return
 	var data : Dictionary = await getKeyData(memberID, key)
+	if data.size() == 0: return false
 	
 	var request : HTTPRequest = HTTPRequest.new()
 	request.timeout = 5
@@ -423,6 +427,7 @@ func renameAPIKey(memberID : String, key : String, keyName : String):
 					"MemberID": {"stringValue": memberID},
 					"PrivateKey": {"stringValue": data["PrivateKey"]},
 					"PublicKey": {"stringValue": data["PublicKey"]},
+					"Database": {"stringValue": database},
 				}
 			}
 		)

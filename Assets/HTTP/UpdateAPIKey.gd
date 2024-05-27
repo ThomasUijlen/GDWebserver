@@ -1,5 +1,5 @@
 extends HttpRouter
-class_name RenameAPIKey
+class_name UpdateAPIKey
 
 func handle_patch(request, response):
 	if Firebase.flooded():
@@ -10,5 +10,5 @@ func handle_patch(request, response):
 		response.send(403)
 		return
 	
-	var succes : bool = await Firebase.updateAPIKey(request.query["memberid"], request.query["key"], str(request.query["keyname"]), "")
+	var succes : bool = await Firebase.updateAPIKey(request.query["memberid"], request.query["key"], str(request.query["keyname"]), request.query["database"].uri_decode())
 	response.send(200 if succes else 404)
