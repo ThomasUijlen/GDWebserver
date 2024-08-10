@@ -154,6 +154,12 @@ func getAllKeyData(memberID : String):
 				keyData["Name"] = fields["Name"]["stringValue"]
 				keyData["PublicKey"] = fields["PublicKey"]["stringValue"]
 				keyData["PrivateKey"] = fields["PrivateKey"]["stringValue"]
+				
+				if fields.has("Database"):
+					keyData["Database"] = fields["Database"]["stringValue"]
+				else:
+					keyData["Database"] = ""
+				
 				resultData[data["name"].get_file()] = keyData
 	
 	return resultData
@@ -434,6 +440,7 @@ func updateAPIKey(memberID : String, key : String, keyName : String, database : 
 	)
 	
 	counter += 5.0
+	markPlayerChanged(memberID)
 	
 	var result = await request.request_completed
 	request.queue_free()
