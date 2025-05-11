@@ -14,7 +14,7 @@ func _ready():
 	httpServer.register_router("/renameapikey", RenameAPIKey.new())
 	httpServer.register_router("/updateapikey", UpdateAPIKey.new())
 	
-#	httpServer.register_router("/getalldata", GetAllData.new())
+	httpServer.register_router("/getalldata", GetAllData.new())
 	
 	add_child(httpServer)
 	httpServer.start()
