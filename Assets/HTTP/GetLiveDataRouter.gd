@@ -37,9 +37,9 @@ func handle_get(request, response):
 		targetKeys = keys.size()
 		
 		for key in keys:
-			Firebase.getLiveData(request.query["memberid"], key.get_file(), liveData)
+			MongoDB.getLiveData(request.query["memberid"], key, liveData)
 	else:
-		Firebase.getLiveData(request.query["memberid"], request.query["key"], liveData)
+		MongoDB.getLiveData(request.query["memberid"], request.query["key"], liveData)
 	
 	var i : int = 0
 	while i < 50:

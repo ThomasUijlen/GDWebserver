@@ -132,6 +132,28 @@ func getAllKeys(memberID : String):
 			for data in json["documents"]:
 				counter += 1.0
 				
+				if "APIKeys/Default" in data["name"]:
+					continue
+				
+				resultData.append(data["fields"]["PublicKey"]["stringValue"])
+	
+	return resultData
+
+func getAllKeysFile(memberID : String):
+	var resultData : Array = []
+	
+	var jsonArray : Array = await firebaseGet(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/APIKeys"
+	)
+	
+	for json in jsonArray:
+		if json.has("documents"):
+			for data in json["documents"]:
+				counter += 1.0
+				
+				if "Default" in data["name"]:
+					continue
+				
 				resultData.append(data["name"])
 	
 	return resultData

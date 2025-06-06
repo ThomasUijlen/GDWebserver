@@ -27,15 +27,16 @@ func handle_get(request, response):
 	var targetKeys : int = 0
 	
 	var keys = await Firebase.getAllKeys(request.query["memberid"])
+	var keysFiles = await Firebase.getAllKeysFile(request.query["memberid"])
 	targetKeys = keys.size()
 	
 	var keyModifier : int = 0
-	for key in keys:
+	for i in range(keys.size()):
 		var keyData : Dictionary = {}
-		var keyName : String = key.get_file()
-		if keyName == "Default": keyModifier = -1
-		Firebase.getKeyName(request.query["memberid"], keyName, keyData)
-		Firebase.getDailyData(request.query["memberid"], keyName, dailyData, keyData)
+		var keyName : String = keys[i]
+		var fileName : String = keysFiles[i].get_file()
+		Firebase.getKeyName(request.query["memberid"], fileName, keyData)
+		MongoDB.getDailyData(request.query["memberid"], keyName, dailyData, keyData)
 	
 	var i : int = 0
 	while i < 100:
