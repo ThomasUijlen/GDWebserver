@@ -71,14 +71,14 @@ public partial class MongoDBAPI : Node
 				Godot.Collections.Dictionary dayData = (Godot.Collections.Dictionary)resultData[day];
 				dayData["playercount"] = (int)dayData.GetValueOrDefault("playercount", 0) + (int)document["PlayerCount"];
 				dayData["lobbiesopened"] = (int)dayData.GetValueOrDefault("lobbiesopened", 0) + (int)document["LobbiesOpened"];
-				dayData["usage"] = (int)dayData.GetValueOrDefault("usage", 0) + (int)document["Usage"];
+				dayData["usage"] = (int)dayData.GetValueOrDefault("usage", 0) + (int)document["DataUsage"];
 			}
 			else
 			{
-				Godot.Collections.Dictionary dayData = (Godot.Collections.Dictionary)resultData[day];
+				Godot.Collections.Dictionary dayData = new Godot.Collections.Dictionary();
 				dayData["playercount"] = (int)document["PlayerCount"];
 				dayData["lobbiesopened"] = (int)document["LobbiesOpened"];
-				dayData["usage"] = (int)document["Usage"];
+				dayData["usage"] = (int)document["DataUsage"];
 				resultData[day] = dayData;
 			}
 		}

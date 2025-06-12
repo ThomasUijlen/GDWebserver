@@ -1,25 +1,6 @@
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\Gd-load Balancer.deps.json
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\Gd-load Balancer.runtimeconfig.json
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\Gd-load Balancer.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\Gd-load Balancer.pdb
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\GodotSharp.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\GodotSharpEditor.dll
 D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.csproj.AssemblyReference.cache
 D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.GeneratedMSBuildEditorConfig.editorconfig
 D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.AssemblyInfoInputs.cache
 D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.AssemblyInfo.cs
 D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.csproj.CoreCompileInputs.cache
 D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.sourcelink.json
-D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load .B4AFCB53.Up2Date
-D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\refint\Gd-load Balancer.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.pdb
-D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\Gd-load Balancer.genruntimeconfig.cache
-D:\Github\Godot\GDWebserver\.godot\mono\temp\obj\Debug\ref\Gd-load Balancer.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\DnsClient.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\Microsoft.Extensions.Logging.Abstractions.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\MongoDB.Bson.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\MongoDB.Driver.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\SharpCompress.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\Snappier.dll
-D:\Github\Godot\GDWebserver\.godot\mono\temp\bin\Debug\ZstdSharp.dll

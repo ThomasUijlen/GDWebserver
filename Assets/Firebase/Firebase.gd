@@ -298,7 +298,6 @@ func getKeyName(memberID : String, keyName : String, targetData : Dictionary):
 	)
 	
 	var result = await request.request_completed
-	
 	if result[1] == 200:
 		var test_json_conv = JSON.new()
 		test_json_conv.parse(result[3].get_string_from_utf8())
@@ -306,7 +305,6 @@ func getKeyName(memberID : String, keyName : String, targetData : Dictionary):
 		
 		if json != null:
 			counter += 1.0
-			
 			var fields = json["fields"]
 			targetData["Name"] = fields["Name"]["stringValue"]
 	

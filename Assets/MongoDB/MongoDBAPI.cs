@@ -47,6 +47,17 @@ public partial class MongoDBAPI : Node
 		client = new MongoClient(connectionString);
 	}
 
+	// private async Task ClearBruh()
+	// {
+	// 	var d = await RetrieveAllDocumentIdsAsync("DailyData");
+	// 	GD.Print(d.Count);
+	// 	foreach (string id in d)
+	// 	{
+	// 		GD.Print(id);
+	// 		await DeleteDocument("DailyData", id);
+	// 	}
+	// }
+
 	private Dictionary<string, CancellationTokenSource> listenerTokens = new Dictionary<string, CancellationTokenSource>();
 	ChangeStreamOptions options = new ChangeStreamOptions
 	{
@@ -319,7 +330,10 @@ public partial class MongoDBAPI : Node
 		var database = client.GetDatabase(databaseName);
 		var collection = database.GetCollection<BsonDocument>(collectionName);
 
-		var filter = Builders<BsonDocument>.Filter.Eq("_id", documentName);
+		FilterDefinition<BsonDocument> filter =
+		ObjectId.TryParse(documentName, out var oid)
+			? Builders<BsonDocument>.Filter.Eq("_id", oid)
+			: Builders<BsonDocument>.Filter.Eq("_id", documentName);
 		var result = await collection.DeleteOneAsync(filter);
 
 		bool isDeleted = result.IsAcknowledged && result.DeletedCount > 0;

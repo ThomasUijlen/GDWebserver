@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Gd-load Balancer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ce33e8bd4effa4207953a9441d14c4f1a16dbafe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f373a0908a328597e6a4a9ee57d9c89eb32674eb")]
 [assembly: System.Reflection.AssemblyProductAttribute("Gd-load Balancer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Gd-load Balancer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

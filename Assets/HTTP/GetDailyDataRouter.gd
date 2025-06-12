@@ -44,7 +44,7 @@ func handle_get(request, response):
 		await Firebase.get_tree().create_timer(0.3).timeout
 		if dailyData.size() == targetKeys+keyModifier:
 			break
-	await Firebase.get_tree().create_timer(0.1).timeout
+	await Firebase.get_tree().create_timer(1.0).timeout
 	if dailyData != null:
 		var jsonString : String = JSON.stringify(dailyData)
 		dailyCache[request.query["memberid"]] = jsonString
