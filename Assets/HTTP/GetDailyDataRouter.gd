@@ -15,6 +15,10 @@ func handle_get(request, response):
 		lastDay = currentDay
 		dailyCache.clear()
 	
+	if !request.query.has("memberid"):
+		response.send(403)
+		return
+	
 	if(dailyCache.has(request.query["memberid"])):
 		response.send(200, dailyCache[request.query["memberid"]])
 		return

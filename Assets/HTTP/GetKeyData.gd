@@ -6,4 +6,8 @@ func handle_get(request, response):
 		response.send(429)
 		return
 	
+	if !request.query.has("memberid"):
+		response.send(403)
+		return
+	
 	response.send(200, JSON.stringify(await Firebase.getAllKeyData(request.query["memberid"])))

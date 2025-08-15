@@ -6,6 +6,10 @@ func handle_get(request, response):
 		response.send(429)
 		return
 	
+	if !request.query.has("memberid"):
+		response.send(403)
+		return
+	
 	if !(await Firebase.memberExists(request.query["memberid"])):
 		response.send(403)
 		return
