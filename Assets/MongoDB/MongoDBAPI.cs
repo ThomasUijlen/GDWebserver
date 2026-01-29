@@ -45,6 +45,7 @@ public partial class MongoDBAPI : Node
 		Firebase = GetNode("/root/Firebase");
 
 		client = new MongoClient(connectionString);
+		ExportUsageDataToCSV();
 	}
 
 	// private async Task ClearBruh()

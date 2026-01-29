@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://w0bi13mw2hdy"]
 
-[ext_resource type="Script" path="res://Main/gd_load_balancer.gd" id="1_u8nr8"]
+[ext_resource type="Script" uid="uid://dwnnpdymufb77" path="res://Main/gd_load_balancer.gd" id="1_u8nr8"]
 
 [node name="GD-LoadBalancer" type="Node"]
 script = ExtResource("1_u8nr8")

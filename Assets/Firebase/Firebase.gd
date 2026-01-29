@@ -96,7 +96,7 @@ func memberExists(memberID : String) -> bool:
 	)
 	
 	var result = await request.request_completed
-	
+	request.queue_free()
 	if result[1] == 200:
 		var test_json_conv = JSON.new()
 		test_json_conv.parse(result[3].get_string_from_utf8())

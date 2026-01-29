@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bmjwjcgjyks6r"]
 
-[ext_resource type="Script" path="res://Assets/AirTable/AirTable.gd" id="1"]
+[ext_resource type="Script" uid="uid://c6vd57oapr6sv" path="res://Assets/AirTable/AirTable.gd" id="1"]
 
 [node name="AirTable" type="Node"]
 script = ExtResource("1")

@@ -1,7 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://rpr1bbiuu6b5"]
 
-[ext_resource type="Script" path="res://Assets/Firebase/firebase.gd" id="1_o8heh"]
-
+[ext_resource type="Script" uid="uid://cmobs8kriexq3" path="res://Assets/Firebase/firebase.gd" id="1_o8heh"]
 
 [node name="Firebase" type="Node"]
 script = ExtResource("1_o8heh")

@@ -12,7 +12,7 @@ var bind_address: String = "*"
 var port: int = 8080
 
 # The server identifier to use when responding to requests [GodotTPD]
-var server_identifier: String = "GodotTPD"
+var server_identifier: String = "GDSync"
 
 
 # The TCP server instance used

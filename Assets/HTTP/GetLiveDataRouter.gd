@@ -35,11 +35,12 @@ func handle_get(request, response):
 	if request.query["key"] == "All" || request.query["key"] == "all":
 		var keys = await Firebase.getAllKeys(request.query["memberid"])
 		targetKeys = keys.size()
-		
+		print(keys)
 		for key in keys:
-			MongoDB.getLiveData(request.query["memberid"], key, liveData)
+			print("scanning ", key)
+			MongoDB.getLiveData(key, liveData)
 	else:
-		MongoDB.getLiveData(request.query["memberid"], request.query["key"], liveData)
+		MongoDB.getLiveData(request.query["key"], liveData)
 	
 	var i : int = 0
 	while i < 50:

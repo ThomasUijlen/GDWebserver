@@ -1,4 +1,4 @@
+res://Assets/MongoDB/MongoDBAPI.cs
 res://Main/GDWebServer.tscn
-res://Assets/HTTP/GetDailyDataRouter.gd
-res://Assets/HTTP/GetPlanData.gd
-res://Assets/HTTP/GetKeyData.gd
+res://Assets/Firebase/firebase.gd
+res://addons/godottpd/http_server.gd

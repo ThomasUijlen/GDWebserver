@@ -1,7 +1,7 @@
 {
   "version": 3,
   "targets": {
-    "net6.0": {
+    "net8.0": {
       "DnsClient/1.6.1": {
         "type": "package",
         "dependencies": {
@@ -18,21 +18,21 @@
           }
         }
       },
-      "Godot.SourceGenerators/4.3.0": {
+      "Godot.SourceGenerators/4.4.1": {
         "type": "package",
         "build": {
           "build/Godot.SourceGenerators.props": {}
         }
       },
-      "GodotSharp/4.3.0": {
+      "GodotSharp/4.4.1": {
         "type": "package",
         "compile": {
-          "lib/net6.0/GodotSharp.dll": {
+          "lib/net8.0/GodotSharp.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/GodotSharp.dll": {
+          "lib/net8.0/GodotSharp.dll": {
             "related": ".xml"
           }
         }
@@ -223,14 +223,14 @@
       "ZstdSharp.Port/0.8.5": {
         "type": "package",
         "compile": {
-          "lib/net6.0/ZstdSharp.dll": {}
+          "lib/net8.0/ZstdSharp.dll": {}
         },
         "runtime": {
-          "lib/net6.0/ZstdSharp.dll": {}
+          "lib/net8.0/ZstdSharp.dll": {}
         }
       }
     },
-    "net6.0/linux-x64": {
+    "net8.0/linux-x64": {
       "DnsClient/1.6.1": {
         "type": "package",
         "dependencies": {
@@ -247,21 +247,21 @@
           }
         }
       },
-      "Godot.SourceGenerators/4.3.0": {
+      "Godot.SourceGenerators/4.4.1": {
         "type": "package",
         "build": {
           "build/Godot.SourceGenerators.props": {}
         }
       },
-      "GodotSharp/4.3.0": {
+      "GodotSharp/4.4.1": {
         "type": "package",
         "compile": {
-          "lib/net6.0/GodotSharp.dll": {
+          "lib/net8.0/GodotSharp.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/GodotSharp.dll": {
+          "lib/net8.0/GodotSharp.dll": {
             "related": ".xml"
           }
         }
@@ -430,10 +430,10 @@
       "ZstdSharp.Port/0.8.5": {
         "type": "package",
         "compile": {
-          "lib/net6.0/ZstdSharp.dll": {}
+          "lib/net8.0/ZstdSharp.dll": {}
         },
         "runtime": {
-          "lib/net6.0/ZstdSharp.dll": {}
+          "lib/net8.0/ZstdSharp.dll": {}
         }
       }
     }
@@ -463,30 +463,30 @@
         "lib/netstandard2.1/DnsClient.xml"
       ]
     },
-    "Godot.SourceGenerators/4.3.0": {
-      "sha512": "fLDNOAo/kpL1JtGXP6b2M48dobzb5YmKSRLXKDt+td8qegu0Ao3H25avoySVmrb52d7zpe8yvgMwba7QMhqnqQ==",
+    "Godot.SourceGenerators/4.4.1": {
+      "sha512": "V/cuX41BxippWGD79zrP2bhqfXkuyiy9OFuCkTu3flo7I6STSJca637TL2phe7rzROIFre0vQR1+PAMdsjO3zg==",
       "type": "package",
-      "path": "godot.sourcegenerators/4.3.0",
+      "path": "godot.sourcegenerators/4.4.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "analyzers/dotnet/cs/Godot.SourceGenerators.dll",
         "build/Godot.SourceGenerators.props",
-        "godot.sourcegenerators.4.3.0.nupkg.sha512",
+        "godot.sourcegenerators.4.4.1.nupkg.sha512",
         "godot.sourcegenerators.nuspec"
       ]
     },
-    "GodotSharp/4.3.0": {
-      "sha512": "mEwRmNIG2k/yPfkFencEkNVXpHCa+uETHkIQcq0MxcsfwJQZ4HueFU5Q9CYDIdd5YrRPqjwuyxbsuD6Je8lfdQ==",
+    "GodotSharp/4.4.1": {
+      "sha512": "ghnQEo5LikQPfbCYcVxje8epffNCiyNG4zvGWUDRZRC1O+653+yqG3wdxk3+5RZsA3jaRuGKRavsGcnhLKe12g==",
       "type": "package",
-      "path": "godotsharp/4.3.0",
+      "path": "godotsharp/4.4.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "godotsharp.4.3.0.nupkg.sha512",
+        "godotsharp.4.4.1.nupkg.sha512",
         "godotsharp.nuspec",
-        "lib/net6.0/GodotSharp.dll",
-        "lib/net6.0/GodotSharp.xml"
+        "lib/net8.0/GodotSharp.dll",
+        "lib/net8.0/GodotSharp.xml"
       ]
     },
     "Microsoft.Extensions.Logging.Abstractions/2.0.0": {
@@ -848,9 +848,9 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net6.0": [
-      "Godot.SourceGenerators >= 4.3.0",
-      "GodotSharp >= 4.3.0",
+    "net8.0": [
+      "Godot.SourceGenerators >= 4.4.1",
+      "GodotSharp >= 4.4.1",
       "MongoDB.Bson >= 3.4.0",
       "MongoDB.Driver >= 3.4.0",
       "ZstdSharp.Port >= 0.8.5"
@@ -858,6 +858,7 @@
   },
   "packageFolders": {
     "C:\\Users\\thoma\\.nuget\\packages\\": {},
+    "C:\\Users\\thoma\\AppData\\Roaming\\Godot\\mono\\GodotNuGetFallbackFolder": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
@@ -870,23 +871,25 @@
       "outputPath": "D:\\Github\\Godot\\GDWebserver\\.godot\\mono\\temp\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
+        "C:\\Users\\thoma\\AppData\\Roaming\\Godot\\mono\\GodotNuGetFallbackFolder",
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
         "C:\\Users\\thoma\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\thoma\\AppData\\Roaming\\NuGet\\config\\Godot.Offline.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
-        "net6.0"
+        "net8.0"
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
-        "net6.0": {
-          "targetAlias": "net6.0",
+        "net8.0": {
+          "targetAlias": "net8.0",
           "projectReferences": {}
         }
       },
@@ -900,19 +903,19 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.100"
+      "SdkAnalysisLevel": "9.0.300"
     },
     "frameworks": {
-      "net6.0": {
-        "targetAlias": "net6.0",
+      "net8.0": {
+        "targetAlias": "net8.0",
         "dependencies": {
           "Godot.SourceGenerators": {
             "target": "Package",
-            "version": "[4.3.0, )"
+            "version": "[4.4.1, )"
           },
           "GodotSharp": {
             "target": "Package",
-            "version": "[4.3.0, )"
+            "version": "[4.4.1, )"
           },
           "MongoDB.Bson": {
             "target": "Package",
@@ -941,11 +944,11 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Runtime.linux-x64",
-            "version": "[6.0.36, 6.0.36]"
+            "version": "[8.0.23, 8.0.23]"
           },
           {
             "name": "Microsoft.NETCore.App.Runtime.linux-x64",
-            "version": "[6.0.36, 6.0.36]"
+            "version": "[8.0.23, 8.0.23]"
           }
         ],
         "frameworkReferences": {
@@ -953,7 +956,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.309/PortableRuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {

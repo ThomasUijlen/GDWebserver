@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://b0sxr6s0lglpu"
+
+[deps]
+
+files=["res://member_usage_export_2025-12-09_18-29-33.TotalLobbiesOpened.translation", "res://member_usage_export_2025-12-09_18-29-33.TotalPlayerCount.translation", "res://member_usage_export_2025-12-09_18-29-33.TotalDataUsageMB.translation", "res://member_usage_export_2025-12-09_18-29-33.TotalPlayTimeMinutes.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgPlayTimeMinutes.translation", "res://member_usage_export_2025-12-09_18-29-33.DaysActive.translation", "res://member_usage_export_2025-12-09_18-29-33.UniqueIPs.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgLobbiesPerDay.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgPlayersPerDay.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgDataPerDayMB.translation"]
+
+source_file="res://member_usage_export_2025-12-09_18-29-33.csv"
+dest_files=["res://member_usage_export_2025-12-09_18-29-33.TotalLobbiesOpened.translation", "res://member_usage_export_2025-12-09_18-29-33.TotalPlayerCount.translation", "res://member_usage_export_2025-12-09_18-29-33.TotalDataUsageMB.translation", "res://member_usage_export_2025-12-09_18-29-33.TotalPlayTimeMinutes.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgPlayTimeMinutes.translation", "res://member_usage_export_2025-12-09_18-29-33.DaysActive.translation", "res://member_usage_export_2025-12-09_18-29-33.UniqueIPs.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgLobbiesPerDay.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgPlayersPerDay.translation", "res://member_usage_export_2025-12-09_18-29-33.AvgDataPerDayMB.translation"]
+
+[params]
+
+compress=true
+delimiter=0
