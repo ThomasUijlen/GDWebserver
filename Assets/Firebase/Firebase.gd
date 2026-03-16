@@ -348,6 +348,7 @@ func getPlanData(memberID : String):
 					if newestPlan == null || int(newestPlan["EndTimestamp"]["stringValue"]) < time:
 						newestPlan = fields
 						planName = fields["Plan"]["stringValue"]
+						break
 	
 	request.request(
 		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Plans/"+planName,

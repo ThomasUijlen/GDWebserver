@@ -27,6 +27,9 @@ func handle_get(request, response):
 		response.send(403)
 		return
 	
+	var planData : Dictionary = await Firebase.getPlanData(request.query["memberid"])
+	var planName : String = planData.get("Name", "free")
+	
 	var dailyData : Dictionary = {}
 	var targetKeys : int = 0
 	
@@ -37,6 +40,7 @@ func handle_get(request, response):
 	var keyModifier : int = 0
 	for i in range(keys.size()):
 		var keyData : Dictionary = {}
+		keyData["Plan"] = planName
 		var keyName : String = keys[i]
 		var fileName : String = keysFiles[i].get_file()
 		Firebase.getKeyName(request.query["memberid"], fileName, keyData)

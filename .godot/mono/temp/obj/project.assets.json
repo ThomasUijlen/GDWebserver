@@ -18,13 +18,13 @@
           }
         }
       },
-      "Godot.SourceGenerators/4.4.1": {
+      "Godot.SourceGenerators/4.5.1": {
         "type": "package",
         "build": {
           "build/Godot.SourceGenerators.props": {}
         }
       },
-      "GodotSharp/4.4.1": {
+      "GodotSharp/4.5.1": {
         "type": "package",
         "compile": {
           "lib/net8.0/GodotSharp.dll": {
@@ -247,13 +247,13 @@
           }
         }
       },
-      "Godot.SourceGenerators/4.4.1": {
+      "Godot.SourceGenerators/4.5.1": {
         "type": "package",
         "build": {
           "build/Godot.SourceGenerators.props": {}
         }
       },
-      "GodotSharp/4.4.1": {
+      "GodotSharp/4.5.1": {
         "type": "package",
         "compile": {
           "lib/net8.0/GodotSharp.dll": {
@@ -463,27 +463,27 @@
         "lib/netstandard2.1/DnsClient.xml"
       ]
     },
-    "Godot.SourceGenerators/4.4.1": {
-      "sha512": "V/cuX41BxippWGD79zrP2bhqfXkuyiy9OFuCkTu3flo7I6STSJca637TL2phe7rzROIFre0vQR1+PAMdsjO3zg==",
+    "Godot.SourceGenerators/4.5.1": {
+      "sha512": "HOHYJQO5A/kzf5CUobeTPOX+JawSvjkDE0v/Fyo4EMYEC2MvCTGUvpJFjqQQmHYLNsiiB7RLVilcnup+jiVfdA==",
       "type": "package",
-      "path": "godot.sourcegenerators/4.4.1",
+      "path": "godot.sourcegenerators/4.5.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "analyzers/dotnet/cs/Godot.SourceGenerators.dll",
         "build/Godot.SourceGenerators.props",
-        "godot.sourcegenerators.4.4.1.nupkg.sha512",
+        "godot.sourcegenerators.4.5.1.nupkg.sha512",
         "godot.sourcegenerators.nuspec"
       ]
     },
-    "GodotSharp/4.4.1": {
-      "sha512": "ghnQEo5LikQPfbCYcVxje8epffNCiyNG4zvGWUDRZRC1O+653+yqG3wdxk3+5RZsA3jaRuGKRavsGcnhLKe12g==",
+    "GodotSharp/4.5.1": {
+      "sha512": "5CFnEHT+FByv5desNHMipz/209SCrWR9CGWFZjGHnXupl1Rw8U8q4nf65/unqZVL97Rx+3J5hskPMoDGaiZL9g==",
       "type": "package",
-      "path": "godotsharp/4.4.1",
+      "path": "godotsharp/4.5.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "godotsharp.4.4.1.nupkg.sha512",
+        "godotsharp.4.5.1.nupkg.sha512",
         "godotsharp.nuspec",
         "lib/net8.0/GodotSharp.dll",
         "lib/net8.0/GodotSharp.xml"
@@ -849,8 +849,8 @@
   },
   "projectFileDependencyGroups": {
     "net8.0": [
-      "Godot.SourceGenerators >= 4.4.1",
-      "GodotSharp >= 4.4.1",
+      "Godot.SourceGenerators >= 4.5.1",
+      "GodotSharp >= 4.5.1",
       "MongoDB.Bson >= 3.4.0",
       "MongoDB.Driver >= 3.4.0",
       "ZstdSharp.Port >= 0.8.5"
@@ -911,11 +911,13 @@
         "dependencies": {
           "Godot.SourceGenerators": {
             "target": "Package",
-            "version": "[4.4.1, )"
+            "version": "[4.5.1, )",
+            "autoReferenced": true
           },
           "GodotSharp": {
             "target": "Package",
-            "version": "[4.4.1, )"
+            "version": "[4.5.1, )",
+            "autoReferenced": true
           },
           "MongoDB.Bson": {
             "target": "Package",

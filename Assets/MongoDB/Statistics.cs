@@ -65,22 +65,46 @@ true
 
 	public async Task getDailyDataInternal(string memberId, string publicKey, Godot.Collections.Dictionary dailyData, Godot.Collections.Dictionary keyData)
 	{
-		Godot.Collections.Dictionary data = await RetrieveDocumentsByIdSubstringAsync(
-			"DailyData",
-			publicKey,
-			100,
-			1
-		);
+		const int pageSize = 100;
+		int page = 1;
+		var allDocuments = new Godot.Collections.Array();
+
+		// Fetch ALL DailyData documents for this key (paginate); sort descending by _id so newest first (document _id = day+ip+memberId+publicKey)
+		while (true)
+		{
+			Godot.Collections.Dictionary data = await RetrieveDocumentsByIdSubstringAsync(
+				"DailyData",
+				publicKey,
+				pageSize,
+				page,
+				false,
+				false,
+				null,
+				"_id",
+				false
+			);
+
+			Godot.Collections.Array documents = (Godot.Collections.Array)data["Documents"];
+			foreach (Godot.Collections.Dictionary doc in documents)
+				allDocuments.Add(doc);
+
+			if (documents.Count < pageSize)
+				break;
+			page++;
+		}
 
 		Godot.Collections.Dictionary resultData = new();
 		int currentDay = Mathf.FloorToInt(Time.GetUnixTimeFromSystem() / 86400.0);
+		string plan = keyData.ContainsKey("Plan") ? (string)keyData["Plan"] : "free";
+		bool includeMaxConcurrent = !string.Equals(plan, "free", StringComparison.OrdinalIgnoreCase);
 
-		Godot.Collections.Array documents = (Godot.Collections.Array)data["Documents"];
-
-		foreach (Godot.Collections.Dictionary document in documents)
+		foreach (Godot.Collections.Dictionary document in allDocuments)
 		{
 			int day = (int)document["Day"];
 			if (day < currentDay - 30) continue;
+
+			int docMaxLobbies = (int)document.GetValueOrDefault("MaxConcurrentLobbies", 0);
+			int docMaxPlayers = (int)document.GetValueOrDefault("MaxConcurrentPlayers", 0);
 
 			if (resultData.ContainsKey(day))
 			{
@@ -88,6 +112,11 @@ true
 				dayData["playercount"] = (int)dayData.GetValueOrDefault("playercount", 0) + (int)document["PlayerCount"];
 				dayData["lobbiesopened"] = (int)dayData.GetValueOrDefault("lobbiesopened", 0) + (int)document["LobbiesOpened"];
 				dayData["usage"] = (int)dayData.GetValueOrDefault("usage", 0) + (int)document["DataUsage"];
+				if (includeMaxConcurrent)
+				{
+					dayData["maxconcurrentlobbies"] = (int)dayData.GetValueOrDefault("maxconcurrentlobbies", 0) + docMaxLobbies;
+					dayData["maxconcurrentplayers"] = (int)dayData.GetValueOrDefault("maxconcurrentplayers", 0) + docMaxPlayers;
+				}
 			}
 			else
 			{
@@ -95,6 +124,11 @@ true
 				dayData["playercount"] = (int)document["PlayerCount"];
 				dayData["lobbiesopened"] = (int)document["LobbiesOpened"];
 				dayData["usage"] = (int)document["DataUsage"];
+				if (includeMaxConcurrent)
+				{
+					dayData["maxconcurrentlobbies"] = docMaxLobbies;
+					dayData["maxconcurrentplayers"] = docMaxPlayers;
+				}
 				resultData[day] = dayData;
 			}
 		}
@@ -362,7 +396,7 @@ true
 
 		// Write header
 		GD.Print($"  Writing header...");
-		file.StoreLine("MemberId,TotalLobbiesOpened,TotalPlayerCount,TotalDataUsageMB,TotalPlayTimeMinutes,AvgPlayTimeMinutes,DaysActive,UniqueIPs,AvgLobbiesPerDay,AvgPlayersPerDay,AvgDataPerDayMB");
+		file.StoreLine("MemberId,TotalLobbiesOpened,TotalPlayerCount,TotalDataUsage,TotalPlayTimeMinutes,AvgPlayTimeMinutes,DaysActive,UniqueIPs,AvgLobbiesPerDay,AvgPlayersPerDay,AvgDataPerDay");
 
 		// Write data rows
 		GD.Print($"  Writing {memberData.Count} data rows...");
@@ -371,28 +405,28 @@ true
 		// Sort by total lobbies opened (most active first)
 		var sortedMembers = memberData.Values.OrderByDescending(m => m.TotalLobbiesOpened).ToList();
 
+		// DataUsage in MongoDB is stored in KB (C# Client sends bytes/1024 to KeyLibrary)
 		foreach (var member in sortedMembers)
 		{
-			double totalDataMB = member.TotalDataUsage / (1024.0 * 1024.0);
 			double totalPlayTimeMinutes = member.TotalPlayTime / 60.0;
 			double avgPlayTimeMinutes = member.TotalPlayTimeCount > 0 ? (member.TotalPlayTime / 60.0) / member.TotalPlayTimeCount : 0;
 			double avgLobbiesPerDay = member.DaysActive > 0 ? (double)member.TotalLobbiesOpened / member.DaysActive : 0;
 			double avgPlayersPerDay = member.DaysActive > 0 ? (double)member.TotalPlayerCount / member.DaysActive : 0;
-			double avgDataPerDayMB = member.DaysActive > 0 ? totalDataMB / member.DaysActive : 0;
+			long avgDataPerDayKb = member.DaysActive > 0 ? member.TotalDataUsage / member.DaysActive : 0;
 
 			string line = string.Join(",", new string[]
 			{
 			EscapeCSV(member.MemberId),
 			member.TotalLobbiesOpened.ToString(),
 			member.TotalPlayerCount.ToString(),
-			totalDataMB.ToString("F4"),
+			FormatDataUsage(member.TotalDataUsage),
 			totalPlayTimeMinutes.ToString("F2"),
 			avgPlayTimeMinutes.ToString("F2"),
 			member.DaysActive.ToString(),
 			member.UniqueIPs.Count.ToString(),
 			avgLobbiesPerDay.ToString("F2"),
 			avgPlayersPerDay.ToString("F2"),
-			avgDataPerDayMB.ToString("F4")
+			FormatDataUsage(avgDataPerDayKb)
 			});
 			file.StoreLine(line);
 			rowsWritten++;
@@ -438,7 +472,7 @@ true
 		GD.Print($"  Active Members (30d): {activeMembers}");
 		GD.Print($"  Total Lobbies Opened: {grandTotalLobbies:N0}");
 		GD.Print($"  Total Player Joins: {grandTotalPlayers:N0}");
-		GD.Print($"  Total Data Usage: {grandTotalData / (1024.0 * 1024.0 * 1024.0):F2} GB");
+		GD.Print($"  Total Data Usage: {FormatDataUsage(grandTotalData)}");
 		GD.Print("╚══════════════════════════════════════════════════════════════╝");
 
 		// Print top 10 most active members
@@ -449,7 +483,7 @@ true
 		{
 			rank++;
 			string memberPreview = member.MemberId.Length > 16 ? member.MemberId.Substring(0, 16) + "..." : member.MemberId;
-			GD.Print($"  {rank}. {memberPreview}: {member.TotalLobbiesOpened} lobbies, {member.TotalPlayerCount} players, {member.TotalDataUsage / (1024.0 * 1024.0):F2} MB");
+			GD.Print($"  {rank}. {memberPreview}: {member.TotalLobbiesOpened} lobbies, {member.TotalPlayerCount} players, {FormatDataUsage(member.TotalDataUsage)}");
 		}
 	}
 
@@ -471,6 +505,15 @@ true
 		public int LobbiesOpened { get; set; }
 		public int PlayerCount { get; set; }
 		public long DataUsage { get; set; }
+	}
+
+	/// <summary>Format data usage (stored in KB): MB with 1 decimal, or GB with 2 decimals when >= 1024 MB.</summary>
+	private static string FormatDataUsage(long usageKb)
+	{
+		double mb = usageKb / 1024.0;
+		if (mb >= 1024.0)
+			return $"{(mb / 1024.0):F2} GB";
+		return $"{mb:F1} MB";
 	}
 
 	private string EscapeCSV(string value)
