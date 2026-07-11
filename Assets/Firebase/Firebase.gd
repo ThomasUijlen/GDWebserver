@@ -431,6 +431,8 @@ func createAPIKey(memberID : String, keyName : String):
 	
 	var result = await request.request_completed
 	request.queue_free()
+	if result[1] == 200:
+		await markPlayerChanged(memberID)
 	return result[1] == 200
 
 func updateAPIKey(memberID : String, key : String, keyName : String, database : String):
@@ -461,10 +463,11 @@ func updateAPIKey(memberID : String, key : String, keyName : String, database : 
 	)
 	
 	counter += 5.0
-	markPlayerChanged(memberID)
 	
 	var result = await request.request_completed
 	request.queue_free()
+	if result[1] == 200:
+		await markPlayerChanged(memberID)
 	return result[1] == 200
 
 func markPlayerChanged(memberID : String):
@@ -585,6 +588,7 @@ func deleteAPIKey(memberID : String, key : String):
 	counter += 30.0
 	
 	request.queue_free()
+	await markPlayerChanged(memberID)
 
 
 const MODULO_8_BIT = 256

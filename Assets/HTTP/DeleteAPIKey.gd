@@ -10,6 +10,5 @@ func handle_delete(request, response):
 		response.send(403)
 		return
 	
-	Firebase.deleteAPIKey(request.query["memberid"], request.query["key"])
-	Firebase.markPlayerChanged(request.query["memberid"])
+	await Firebase.deleteAPIKey(request.query["memberid"], request.query["key"])
 	response.send(200)

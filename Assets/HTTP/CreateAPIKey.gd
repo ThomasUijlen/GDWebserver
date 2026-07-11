@@ -18,8 +18,9 @@ func handle_post(request, response):
 			keyModifier = 1
 	
 	if keys.size() < data["KeyCap"]+keyModifier:
-		await Firebase.createAPIKey(request.query["memberid"], str(request.query["keyname"]))
-		Firebase.markPlayerChanged(request.query["memberid"])
-		response.send(200)
+		if await Firebase.createAPIKey(request.query["memberid"], str(request.query["keyname"])):
+			response.send(200)
+		else:
+			response.send(500)
 	else:
 		response.send(403)
