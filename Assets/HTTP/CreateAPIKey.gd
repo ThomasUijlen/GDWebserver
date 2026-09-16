@@ -5,20 +5,20 @@ func handle_post(request, response):
 	if Firebase.flooded():
 		response.send(429)
 		return
-	
-	if !(await Firebase.memberExists(request.query["memberid"])):
+	var memberID : String = await MemberstackAuth.require_id(request, response)
+	if memberID == "":
+		return
+	if !(await Firebase.memberExists(memberID)):
 		response.send(403)
 		return
-	
-	var data : Dictionary = await Firebase.getPlanData(request.query["memberid"])
-	var keys : Array = await Firebase.getAllKeys(request.query["memberid"])
+	var data : Dictionary = await Firebase.getPlanData(memberID)
+	var keys : Array = await Firebase.getAllKeys(memberID)
 	var keyModifier : int = 0
 	for key in keys:
 		if key.get_file() == "Default":
 			keyModifier = 1
-	
 	if keys.size() < data["KeyCap"]+keyModifier:
-		if await Firebase.createAPIKey(request.query["memberid"], str(request.query["keyname"])):
+		if await Firebase.createAPIKey(memberID, str(request.query["keyname"])):
 			response.send(200)
 		else:
 			response.send(500)

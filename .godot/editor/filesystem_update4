@@ -1,4 +1,1 @@
-res://Main/GDWebServer.tscn
-res://Assets/Firebase/firebase.gd
-res://Assets/MongoDB/MongoDBAPI.cs
-res://Assets/HTTP/GetDailyDataRouter.gd
+res://Assets/HTTP/MemberstackAuth.gd

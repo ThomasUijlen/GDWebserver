@@ -5,10 +5,11 @@ func handle_delete(request, response):
 	if Firebase.flooded():
 		response.send(429)
 		return
-	
-	if !(await Firebase.memberExists(request.query["memberid"])):
+	var memberID : String = await MemberstackAuth.require_id(request, response)
+	if memberID == "":
+		return
+	if !(await Firebase.memberExists(memberID)):
 		response.send(403)
 		return
-	
-	await Firebase.deleteAPIKey(request.query["memberid"], request.query["key"])
+	await Firebase.deleteAPIKey(memberID, request.query["key"])
 	response.send(200)

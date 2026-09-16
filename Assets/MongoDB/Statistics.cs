@@ -6,9 +6,39 @@ using System.Threading.Tasks;
 
 public partial class MongoDBAPI : Node
 {
+	public async Task<Godot.Collections.Dictionary> GetLiveDataAsync(string publicKey)
+	{
+		var liveData = new Godot.Collections.Dictionary
+		{
+			{ "usage", 0L },
+			{ "playercount", 0 },
+			{ "lobbycount", 0 },
+			{ "keys", 0 }
+		};
+		await getLiveDataFastInternal(publicKey, liveData);
+		return liveData;
+	}
+
+	public async Task<Godot.Collections.Dictionary> GetDailyDataAsync(string memberId, string publicKey, string plan, string name)
+	{
+		var keyData = new Godot.Collections.Dictionary
+		{
+			{ "Plan", plan ?? "free" },
+			{ "Name", name ?? "" }
+		};
+		var dailyData = new Godot.Collections.Dictionary();
+		await getDailyDataInternal(memberId, publicKey, dailyData, keyData);
+		return keyData;
+	}
+
 	public void getLiveData(string publicKey, Godot.Collections.Dictionary liveData)
 	{
 		_ = getLiveDataInternal(publicKey, liveData);
+	}
+
+	public void getLiveDataFast(string publicKey, Godot.Collections.Dictionary liveData)
+	{
+		_ = getLiveDataFastInternal(publicKey, liveData);
 	}
 
 	public async Task getLiveDataInternal(string publicKey, Godot.Collections.Dictionary liveData)
@@ -58,6 +88,40 @@ true
 		GD.Print("Live data ", liveData);
 	}
 
+	async Task getLiveDataFastInternal(string publicKey, Godot.Collections.Dictionary liveData)
+	{
+		Godot.Collections.Dictionary data = await RetrieveDocumentsByIdSubstringAsync(
+			"LiveData",
+			publicKey,
+			100,
+			1,
+			false,
+			true
+		);
+
+		Godot.Collections.Array documents = (Godot.Collections.Array)data["Documents"];
+
+		int currentTime = (int)Time.GetUnixTimeFromSystem();
+		long dataUsage = 0;
+		int playerCount = 0;
+		int lobbyCount = 0;
+
+		foreach (Godot.Collections.Dictionary document in documents)
+		{
+			int validTime = (int)document["ValidTime"];
+			if (currentTime > validTime - 3600) continue;
+
+			dataUsage += (long)document["DataUsage"];
+			playerCount += (int)document["PlayerCount"];
+			lobbyCount += (int)document["LobbyCount"];
+		}
+
+		liveData["usage"] = (long)liveData.GetValueOrDefault("usage", 0) + dataUsage;
+		liveData["playercount"] = (int)liveData.GetValueOrDefault("playercount", 0) + playerCount;
+		liveData["lobbycount"] = (int)liveData.GetValueOrDefault("lobbycount", 0) + lobbyCount;
+		liveData["keys"] = (int)liveData.GetValueOrDefault("keys", 0) + 1;
+	}
+
 	public void getDailyData(string memberId, string publicKey, Godot.Collections.Dictionary dailyData, Godot.Collections.Dictionary keyData)
 	{
 		_ = getDailyDataInternal(memberId, publicKey, dailyData, keyData);
@@ -65,11 +129,14 @@ true
 
 	public async Task getDailyDataInternal(string memberId, string publicKey, Godot.Collections.Dictionary dailyData, Godot.Collections.Dictionary keyData)
 	{
+		string plan = keyData.ContainsKey("Plan") ? (string)keyData["Plan"] : "free";
+		bool paidPlan = !string.Equals(plan, "free", StringComparison.OrdinalIgnoreCase)
+			&& !string.Equals(plan, "none", StringComparison.OrdinalIgnoreCase);
+
 		const int pageSize = 100;
 		int page = 1;
 		var allDocuments = new Godot.Collections.Array();
 
-		// Fetch ALL DailyData documents for this key (paginate); sort descending by _id so newest first (document _id = day+ip+memberId+publicKey)
 		while (true)
 		{
 			Godot.Collections.Dictionary data = await RetrieveDocumentsByIdSubstringAsync(
@@ -95,39 +162,37 @@ true
 
 		Godot.Collections.Dictionary resultData = new();
 		int currentDay = Mathf.FloorToInt(Time.GetUnixTimeFromSystem() / 86400.0);
-		string plan = keyData.ContainsKey("Plan") ? (string)keyData["Plan"] : "free";
-		bool includeMaxConcurrent = !string.Equals(plan, "free", StringComparison.OrdinalIgnoreCase);
 
 		foreach (Godot.Collections.Dictionary document in allDocuments)
 		{
 			int day = (int)document["Day"];
 			if (day < currentDay - 30) continue;
 
-			int docMaxLobbies = (int)document.GetValueOrDefault("MaxConcurrentLobbies", 0);
-			int docMaxPlayers = (int)document.GetValueOrDefault("MaxConcurrentPlayers", 0);
-
+			int usage = (int)document["DataUsage"];
 			if (resultData.ContainsKey(day))
 			{
 				Godot.Collections.Dictionary dayData = (Godot.Collections.Dictionary)resultData[day];
-				dayData["playercount"] = (int)dayData.GetValueOrDefault("playercount", 0) + (int)document["PlayerCount"];
-				dayData["lobbiesopened"] = (int)dayData.GetValueOrDefault("lobbiesopened", 0) + (int)document["LobbiesOpened"];
-				dayData["usage"] = (int)dayData.GetValueOrDefault("usage", 0) + (int)document["DataUsage"];
-				if (includeMaxConcurrent)
+				dayData["usage"] = (int)dayData.GetValueOrDefault("usage", 0) + usage;
+				if (paidPlan)
 				{
-					dayData["maxconcurrentlobbies"] = (int)dayData.GetValueOrDefault("maxconcurrentlobbies", 0) + docMaxLobbies;
-					dayData["maxconcurrentplayers"] = (int)dayData.GetValueOrDefault("maxconcurrentplayers", 0) + docMaxPlayers;
+					dayData["playercount"] = (int)dayData.GetValueOrDefault("playercount", 0) + (int)document["PlayerCount"];
+					dayData["lobbiesopened"] = (int)dayData.GetValueOrDefault("lobbiesopened", 0) + (int)document["LobbiesOpened"];
+					dayData["maxconcurrentlobbies"] = (int)dayData.GetValueOrDefault("maxconcurrentlobbies", 0)
+						+ (int)document.GetValueOrDefault("MaxConcurrentLobbies", 0);
+					dayData["maxconcurrentplayers"] = (int)dayData.GetValueOrDefault("maxconcurrentplayers", 0)
+						+ (int)document.GetValueOrDefault("MaxConcurrentPlayers", 0);
 				}
 			}
 			else
 			{
 				Godot.Collections.Dictionary dayData = new Godot.Collections.Dictionary();
-				dayData["playercount"] = (int)document["PlayerCount"];
-				dayData["lobbiesopened"] = (int)document["LobbiesOpened"];
-				dayData["usage"] = (int)document["DataUsage"];
-				if (includeMaxConcurrent)
+				dayData["usage"] = usage;
+				if (paidPlan)
 				{
-					dayData["maxconcurrentlobbies"] = docMaxLobbies;
-					dayData["maxconcurrentplayers"] = docMaxPlayers;
+					dayData["playercount"] = (int)document["PlayerCount"];
+					dayData["lobbiesopened"] = (int)document["LobbiesOpened"];
+					dayData["maxconcurrentlobbies"] = (int)document.GetValueOrDefault("MaxConcurrentLobbies", 0);
+					dayData["maxconcurrentplayers"] = (int)document.GetValueOrDefault("MaxConcurrentPlayers", 0);
 				}
 				resultData[day] = dayData;
 			}

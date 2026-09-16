@@ -5,10 +5,11 @@ func handle_patch(request, response):
 	if Firebase.flooded():
 		response.send(429)
 		return
-	
-	if !(await Firebase.memberExists(request.query["memberid"])):
+	var memberID : String = await MemberstackAuth.require_id(request, response)
+	if memberID == "":
+		return
+	if !(await Firebase.memberExists(memberID)):
 		response.send(403)
 		return
-	
-	var succes : bool = await Firebase.updateAPIKey(request.query["memberid"], request.query["key"], str(request.query["keyname"]), request.query["database"].uri_decode())
+	var succes : bool = await Firebase.updateAPIKey(memberID, request.query["key"], str(request.query["keyname"]), request.query["database"].uri_decode())
 	response.send(200 if succes else 404)

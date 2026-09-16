@@ -613,3 +613,97 @@ func generateUniqueID() -> String:
 
 func flooded() -> bool:
 	return counter > 1000
+
+func get_keys_page(member_id : String) -> Dictionary:
+	var bag : Dictionary = { "keydata": {}, "plan": {}, "left": 2 }
+	_page_fill_keys(member_id, bag)
+	_page_fill_plan(member_id, bag)
+	while int(bag.left) > 0:
+		await get_tree().process_frame
+	return { "keys": bag.keydata, "plan": bag.plan }
+
+func _page_fill_keys(member_id : String, bag : Dictionary) -> void:
+	bag.keydata = await getAllKeyData(member_id)
+	bag.left -= 1
+
+func _page_fill_plan(member_id : String, bag : Dictionary) -> void:
+	bag.plan = await getPlanData(member_id)
+	bag.left -= 1
+
+func get_live_snapshot(member_id : String, key : String) -> Dictionary:
+	var live : Dictionary = {
+		"playercount": 0,
+		"lobbycount": 0,
+		"usage": 0,
+		"keys": 0,
+	}
+	var all : Dictionary = await getAllKeyData(member_id)
+	var public_keys : Array = []
+	if key == "All" or key == "all" or key == "":
+		for id in all:
+			if str(id) == "Default":
+				continue
+			public_keys.append(all[id]["PublicKey"])
+	elif all.has(key):
+		public_keys.append(all[key]["PublicKey"])
+	else:
+		public_keys.append(key)
+	if public_keys.is_empty():
+		return live
+	var target : int = public_keys.size()
+	for pk in public_keys:
+		MongoDB.getLiveDataFast(str(pk), live)
+	var i : int = 0
+	while i < 50:
+		i += 1
+		await get_tree().create_timer(0.15).timeout
+		if int(live["keys"]) >= target:
+			break
+	return live
+
+func plan_allows_charts(plan_name : String) -> bool:
+	var n := str(plan_name).strip_edges().to_lower()
+	return n != "" and n != "free" and n != "none"
+
+func get_charts_page(member_id : String) -> Dictionary:
+	var page : Dictionary = await get_keys_page(member_id)
+	var keys : Dictionary = page["keys"]
+	var plan_name : String = str(page["plan"].get("Name", "free"))
+	var charts : bool = plan_allows_charts(plan_name)
+	var daily : Dictionary = {}
+	var pending : int = 0
+	for id in keys:
+		if str(id) == "Default":
+			continue
+		pending += 1
+	if pending == 0:
+		return { "keys": keys, "daily": daily, "charts": charts }
+	var bag : Dictionary = { "left": pending, "daily": daily }
+	for id in keys:
+		if str(id) == "Default":
+			continue
+		_daily_one(member_id, str(id), keys[id], plan_name, bag)
+	while int(bag.left) > 0:
+		await get_tree().process_frame
+	return { "keys": keys, "daily": bag.daily, "charts": charts }
+
+func _daily_one(member_id : String, key_id : String, key_info : Dictionary, plan_name : String, bag : Dictionary) -> void:
+	var name : String = str(key_info.get("Name", ""))
+	var public_key : String = str(key_info.get("PublicKey", ""))
+	if public_key.is_empty():
+		bag.daily[key_id] = { "Name": name, "Plan": plan_name, "MonthlyData": {} }
+		bag.left -= 1
+		return
+	var key_data : Dictionary = { "Name": name, "Plan": plan_name }
+	var slot : Dictionary = {}
+	MongoDB.getDailyData(member_id, public_key, slot, key_data)
+	var i : int = 0
+	while i < 80:
+		i += 1
+		await get_tree().create_timer(0.15).timeout
+		if slot.has(public_key):
+			bag.daily[key_id] = slot[public_key]
+			bag.left -= 1
+			return
+	bag.daily[key_id] = { "Name": name, "Plan": plan_name, "MonthlyData": {} }
+	bag.left -= 1

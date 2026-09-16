@@ -54,12 +54,12 @@
           "dependencies": {
             "Godot.SourceGenerators": {
               "target": "Package",
-              "version": "[4.5.1, )",
+              "version": "[4.5.2, )",
               "autoReferenced": true
             },
             "GodotSharp": {
               "target": "Package",
-              "version": "[4.5.1, )",
+              "version": "[4.5.2, )",
               "autoReferenced": true
             },
             "MongoDB.Bson": {

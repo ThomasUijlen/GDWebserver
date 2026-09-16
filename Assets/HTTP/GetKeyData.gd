@@ -5,9 +5,7 @@ func handle_get(request, response):
 	if Firebase.flooded():
 		response.send(429)
 		return
-	
-	if !request.query.has("memberid"):
-		response.send(403)
+	var memberID : String = await MemberstackAuth.require_id(request, response)
+	if memberID == "":
 		return
-	
-	response.send(200, JSON.stringify(await Firebase.getAllKeyData(request.query["memberid"])))
+	response.send(200, JSON.stringify(await Firebase.getAllKeyData(memberID)))

@@ -8,6 +8,10 @@ func _ready():
 	httpServer.register_router("/getdailydata", GetDailyData.new())
 	httpServer.register_router("/getkeydata", GetKeyData.new())
 	httpServer.register_router("/getplandata", GetPlanData.new())
+	httpServer.register_router("/getkeyspage", GetKeysPage.new())
+	httpServer.register_router("/getlivedatafast", GetLiveDataFast.new())
+	httpServer.register_router("/getdashboardpage", GetDashboardPage.new())
+	httpServer.register_router("/getchartspage", GetChartsPage.new())
 	httpServer.register_router("/createapikey", CreateAPIKey.new())
 	httpServer.register_router("/deleteapikey", DeleteAPIKey.new())
 	
