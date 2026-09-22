@@ -898,6 +898,63 @@ public partial class MongoDBAPI : Node
 			}
 		}
 	}
+
+	private const string KeyInvalidationsCollection = "KeyInvalidations";
+	private bool keyInvalidationTtlEnsured = false;
+	private readonly ConcurrentDictionary<string, int> keyInvalidationGenerations = new ConcurrentDictionary<string, int>();
+	private readonly ConcurrentDictionary<string, int> keyInvalidationCompleted = new ConcurrentDictionary<string, int>();
+
+	/// <summary>
+	/// Upserts main.KeyInvalidations[_id=memberId] and retries until Mongo acknowledges.
+	/// Returns a generation so GDScript can wait without dropping the memberId.
+	/// </summary>
+	public int WriteKeyInvalidation(string memberId)
+	{
+		if (string.IsNullOrEmpty(memberId))
+			return 0;
+
+		int generation = keyInvalidationGenerations.AddOrUpdate(memberId, 1, (_, previous) => previous + 1);
+		_ = WriteKeyInvalidationLoop(memberId, generation);
+		return generation;
+	}
+
+	public bool HasKeyInvalidationSettled(string memberId, int generation)
+	{
+		return keyInvalidationCompleted.TryGetValue(memberId, out int completed) && completed >= generation;
+	}
+
+	private async Task WriteKeyInvalidationLoop(string memberId, int generation)
+	{
+		int delayMs = 1000;
+		while (true)
+		{
+			try
+			{
+				var collection = client.GetDatabase(databaseName).GetCollection<BsonDocument>(KeyInvalidationsCollection);
+				if (!keyInvalidationTtlEnsured)
+				{
+					await CreateTTLIndexIfNeeded(collection, "expiresAt");
+					keyInvalidationTtlEnsured = true;
+				}
+
+				long updated = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+				var filter = Builders<BsonDocument>.Filter.Eq("_id", memberId);
+				var update = Builders<BsonDocument>.Update
+					.Set("Updated", updated)
+					.Set("expiresAt", DateTime.UtcNow.AddHours(24));
+
+				await collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true });
+				keyInvalidationCompleted.AddOrUpdate(memberId, generation, (_, previous) => Math.Max(previous, generation));
+				return;
+			}
+			catch (Exception ex)
+			{
+				GD.PushWarning("KeyInvalidation write failed for " + memberId + ": " + ex.Message);
+				await Task.Delay(delayMs);
+				delayMs = Math.Min(delayMs * 2, 30000);
+			}
+		}
+	}
 }
 
 namespace ENUMS

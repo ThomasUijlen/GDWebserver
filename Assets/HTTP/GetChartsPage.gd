@@ -1,9 +1,6 @@
 extends HttpRouter
 class_name GetChartsPage
 
-var last_day : int = 0
-var cache : Dictionary = {}
-
 func handle_get(request, response):
 	if Firebase.flooded():
 		response.send(429)
@@ -11,14 +8,14 @@ func handle_get(request, response):
 	var memberID : String = await MemberstackAuth.require_id(request, response)
 	if memberID == "":
 		return
-	var day : int = int(floor(Time.get_unix_time_from_system() / 86400.0))
-	if day != last_day:
-		last_day = day
-		cache.clear()
-	if cache.has(memberID):
-		response.send(200, cache[memberID])
+	Firebase._roll_charts_cache_day()
+	var plan : Dictionary = await Firebase.getPlanData(memberID)
+	var plan_name : String = str(plan.get("Name", "free"))
+	if Firebase.charts_cache.has(memberID) and str(Firebase.charts_cache_plan.get(memberID, "")) == plan_name:
+		response.send(200, Firebase.charts_cache[memberID])
 		return
 	var page : Dictionary = await Firebase.get_charts_page(memberID)
 	var json_string : String = JSON.stringify(page)
-	cache[memberID] = json_string
+	Firebase.charts_cache[memberID] = json_string
+	Firebase.charts_cache_plan[memberID] = str(page.get("plan", {}).get("Name", plan_name))
 	response.send(200, json_string)

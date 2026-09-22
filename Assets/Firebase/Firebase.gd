@@ -8,9 +8,24 @@ func _ready():
 	randomize()
 
 var counter : float = 0.0
+var charts_cache : Dictionary = {}
+var charts_cache_plan : Dictionary = {}
+var charts_cache_day : int = 0
+
 func _process(delta):
 	counter -= delta*1000.0
 	if counter < 0.0: counter = 0.0
+
+func _roll_charts_cache_day() -> void:
+	var day : int = int(floor(Time.get_unix_time_from_system() / 86400.0))
+	if day != charts_cache_day:
+		charts_cache_day = day
+		charts_cache.clear()
+		charts_cache_plan.clear()
+
+func invalidate_charts_cache(member_id : String) -> void:
+	charts_cache.erase(member_id)
+	charts_cache_plan.erase(member_id)
 
 func firebaseGet(url : String) -> Array:
 	var request : HTTPRequest = HTTPRequest.new()
@@ -341,14 +356,17 @@ func getPlanData(memberID : String):
 			if json.has("documents"):
 				for data in json["documents"]:
 					counter += 1.0
-					
 					var fields = data["fields"]
+					if !fields.has("EndTimestamp") || !fields.has("Plan"):
+						continue
+					if !fields["EndTimestamp"].has("stringValue") || !fields["Plan"].has("stringValue"):
+						continue
 					var time = int(fields["EndTimestamp"]["stringValue"])
-					if time < Time.get_unix_time_from_system(): continue
+					if time < Time.get_unix_time_from_system():
+						continue
 					if newestPlan == null || int(newestPlan["EndTimestamp"]["stringValue"]) < time:
 						newestPlan = fields
 						planName = fields["Plan"]["stringValue"]
-						break
 	
 	request.request(
 		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Plans/"+planName,
@@ -382,6 +400,10 @@ func getPlanData(memberID : String):
 				resultData["ResetUnix"] = int(floor(Time.get_unix_time_from_system()/86400)+1)*86400
 	
 	request.queue_free()
+	var live_name : String = str(resultData.get("Name", "None"))
+	_roll_charts_cache_day()
+	if charts_cache_plan.has(memberID) and str(charts_cache_plan[memberID]) != live_name:
+		invalidate_charts_cache(memberID)
 	return resultData
 
 func time_until_reset(target_time: int) -> String:
@@ -508,6 +530,33 @@ func markPlayerChanged(memberID : String):
 			
 			await request.request_completed
 	request.queue_free()
+	await notifyKeyInvalidation(memberID)
+
+var _keyInvalidationPending : Dictionary = {}
+var _keyInvalidationFlushing : bool = false
+
+func notifyKeyInvalidation(memberID : String) -> void:
+	if memberID.is_empty():
+		return
+	_keyInvalidationPending[memberID] = true
+	if _keyInvalidationFlushing:
+		while _keyInvalidationPending.has(memberID):
+			await get_tree().process_frame
+		return
+	_keyInvalidationFlushing = true
+	while !_keyInvalidationPending.is_empty():
+		var id : String = str(_keyInvalidationPending.keys()[0])
+		var generation : int = 0
+		while generation <= 0:
+			generation = int(MongoDB.WriteKeyInvalidation(id))
+			if generation <= 0:
+				await get_tree().create_timer(1.0).timeout
+		while _keyInvalidationPending.has(id):
+			if bool(MongoDB.HasKeyInvalidationSettled(id, generation)):
+				_keyInvalidationPending.erase(id)
+				break
+			await get_tree().process_frame
+	_keyInvalidationFlushing = false
 
 func deleteAPIKey(memberID : String, key : String):
 	if key == "Default": return
@@ -691,7 +740,7 @@ func _daily_one(member_id : String, key_id : String, key_info : Dictionary, plan
 	var name : String = str(key_info.get("Name", ""))
 	var public_key : String = str(key_info.get("PublicKey", ""))
 	if public_key.is_empty():
-		bag.daily[key_id] = { "Name": name, "Plan": plan_name, "MonthlyData": {} }
+		bag.daily[key_id] = { "Name": name, "Plan": plan_name, "MonthlyData": {}, "Regions": {} }
 		bag.left -= 1
 		return
 	var key_data : Dictionary = { "Name": name, "Plan": plan_name }
@@ -705,5 +754,5 @@ func _daily_one(member_id : String, key_id : String, key_info : Dictionary, plan
 			bag.daily[key_id] = slot[public_key]
 			bag.left -= 1
 			return
-	bag.daily[key_id] = { "Name": name, "Plan": plan_name, "MonthlyData": {} }
+	bag.daily[key_id] = { "Name": name, "Plan": plan_name, "MonthlyData": {}, "Regions": {} }
 	bag.left -= 1

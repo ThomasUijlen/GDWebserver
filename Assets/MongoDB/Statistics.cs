@@ -161,6 +161,7 @@ true
 		}
 
 		Godot.Collections.Dictionary resultData = new();
+		Godot.Collections.Dictionary regions = new();
 		int currentDay = Mathf.FloorToInt(Time.GetUnixTimeFromSystem() / 86400.0);
 
 		foreach (Godot.Collections.Dictionary document in allDocuments)
@@ -181,6 +182,10 @@ true
 						+ (int)document.GetValueOrDefault("MaxConcurrentLobbies", 0);
 					dayData["maxconcurrentplayers"] = (int)dayData.GetValueOrDefault("maxconcurrentplayers", 0)
 						+ (int)document.GetValueOrDefault("MaxConcurrentPlayers", 0);
+					dayData["playtime"] = (int)dayData.GetValueOrDefault("playtime", 0)
+						+ (int)document.GetValueOrDefault("PlayTime", 0);
+					dayData["playtimecount"] = (int)dayData.GetValueOrDefault("playtimecount", 0)
+						+ (int)document.GetValueOrDefault("PlayTimeCount", 0);
 				}
 			}
 			else
@@ -193,12 +198,18 @@ true
 					dayData["lobbiesopened"] = (int)document["LobbiesOpened"];
 					dayData["maxconcurrentlobbies"] = (int)document.GetValueOrDefault("MaxConcurrentLobbies", 0);
 					dayData["maxconcurrentplayers"] = (int)document.GetValueOrDefault("MaxConcurrentPlayers", 0);
+					dayData["playtime"] = (int)document.GetValueOrDefault("PlayTime", 0);
+					dayData["playtimecount"] = (int)document.GetValueOrDefault("PlayTimeCount", 0);
 				}
 				resultData[day] = dayData;
 			}
+
+			if (paidPlan)
+				MergeDocumentRegions(regions, document);
 		}
 
 		keyData["MonthlyData"] = resultData;
+		keyData["Regions"] = regions;
 		dailyData[publicKey] = keyData;
 	}
 
@@ -579,6 +590,43 @@ true
 		if (mb >= 1024.0)
 			return $"{(mb / 1024.0):F2} GB";
 		return $"{mb:F1} MB";
+	}
+
+	private static void MergeDocumentRegions(Godot.Collections.Dictionary dest, Godot.Collections.Dictionary document)
+	{
+		if (document.ContainsKey("PlayerRegions"))
+			MergeRegionCounts(dest, document["PlayerRegions"]);
+		if (!document.ContainsKey("Development"))
+			return;
+		Variant development = document["Development"];
+		if (development.VariantType != Variant.Type.Dictionary)
+			return;
+		Godot.Collections.Dictionary nested = development.AsGodotDictionary();
+		if (nested.ContainsKey("PlayerRegions"))
+			MergeRegionCounts(dest, nested["PlayerRegions"]);
+	}
+
+	private static void MergeRegionCounts(Godot.Collections.Dictionary dest, Variant source)
+	{
+		if (source.VariantType != Variant.Type.Dictionary)
+			return;
+		Godot.Collections.Dictionary dict = source.AsGodotDictionary();
+		foreach (Variant key in dict.Keys)
+		{
+			string code = key.AsString().Trim().ToUpperInvariant();
+			if (code == "UK") code = "GB";
+			if (string.IsNullOrEmpty(code) || code == "UNKNOWN")
+				continue;
+			int add = 0;
+			Variant val = dict[key];
+			if (val.VariantType == Variant.Type.Int)
+				add = val.AsInt32();
+			else if (val.VariantType == Variant.Type.Float)
+				add = (int)val.AsDouble();
+			if (add == 0)
+				continue;
+			dest[code] = (int)dest.GetValueOrDefault(code, 0) + add;
+		}
 	}
 
 	private string EscapeCSV(string value)
