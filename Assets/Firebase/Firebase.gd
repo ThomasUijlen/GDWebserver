@@ -325,6 +325,90 @@ func getKeyName(memberID : String, keyName : String, targetData : Dictionary):
 	
 	request.queue_free()
 
+func _firestore_scalar(field) -> String:
+	if typeof(field) != TYPE_DICTIONARY:
+		return ""
+	if field.has("stringValue"):
+		return str(field["stringValue"])
+	if field.has("integerValue"):
+		return str(field["integerValue"])
+	if field.has("doubleValue"):
+		return str(int(field["doubleValue"]))
+	return ""
+
+func _fetch_plan_catalog(request : HTTPRequest, planName : String) -> Dictionary:
+	request.request(
+		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Plans/"+planName,
+		["Authorization: Bearer "+ID_TOKEN],
+		HTTPClient.METHOD_GET
+	)
+	var result = await request.request_completed
+	if result[1] != 200:
+		return {}
+	var test_json_conv = JSON.new()
+	test_json_conv.parse(result[3].get_string_from_utf8())
+	var json = test_json_conv.get_data()
+	if json == null or !json.has("fields"):
+		return {}
+	counter += 1.0
+	var fields = json["fields"]
+	return {
+		"Name": json["name"].get_file(),
+		"DataCap": int(fields["DataCap"]["integerValue"]) if fields.has("DataCap") else 0,
+		"KeyCap": int(fields["KeyCap"]["integerValue"]) if fields.has("KeyCap") else 0,
+		"DatabaseLimit": int(fields["DatabaseLimit"]["integerValue"]) if fields.has("DatabaseLimit") else 0,
+		"StorageLimit": int(fields["StorageLimit"]["integerValue"]) if fields.has("StorageLimit") else 0,
+		"PlayerLimit": int(fields["PlayerLimit"]["integerValue"]) if fields.has("PlayerLimit") else 0,
+		"MonthlyDataCap": int(fields["MonthlyDataCap"]["integerValue"]) if fields.has("MonthlyDataCap") else 0,
+	}
+
+const FREE_CYCLE_PERIOD_SECONDS : int = 30 * 86400
+const FREE_CYCLE_PENDING_RESET := "30 days until reset."
+
+func free_cycle_next_reset(anchor : int, now : int = -1) -> int:
+	if anchor <= 0:
+		return 0
+	if now < 0:
+		now = int(Time.get_unix_time_from_system())
+	if now < anchor:
+		return anchor + FREE_CYCLE_PERIOD_SECONDS
+	var periods : int = int(floor(float(now - anchor) / float(FREE_CYCLE_PERIOD_SECONDS))) + 1
+	return anchor + periods * FREE_CYCLE_PERIOD_SECONDS
+
+func _free_cycle_anchor(memberID : String) -> int:
+	if memberID.is_empty():
+		return 0
+	var bag := {"ready": false, "ok": false, "anchor": 0}
+	MongoDB.ReadFreeCycleAnchor(memberID, bag)
+	var started := Time.get_unix_time_from_system()
+	while !bool(bag.get("ready", false)):
+		await get_tree().process_frame
+		if Time.get_unix_time_from_system() - started > 5.0:
+			return 0
+	if !bool(bag.get("ok", false)):
+		return 0
+	return int(bag.get("anchor", 0))
+
+func _apply_free_cycle_reset(resultData : Dictionary, memberID : String) -> void:
+	var anchor := await _free_cycle_anchor(memberID)
+	if anchor <= 0:
+		resultData["CycleEstablished"] = false
+		resultData["ResetUnix"] = 0
+		resultData["ResetTime"] = FREE_CYCLE_PENDING_RESET
+		return
+	var nextReset := free_cycle_next_reset(anchor)
+	resultData["CycleEstablished"] = true
+	resultData["ResetUnix"] = nextReset
+	resultData["ResetTime"] = time_until_reset(nextReset)
+
+## Matches the database. A paid plan stays active this long after EndTimestamp.
+const PLAN_GRACE_SECONDS : int = 3 * 86400
+
+func _plan_period_length(start_unix : int, end_unix : int) -> int:
+	if start_unix <= 0 or end_unix <= start_unix:
+		return 30 * 86400
+	return end_unix - start_unix
+
 func getPlanData(memberID : String):
 	var resultData : Dictionary = {
 		"Name" : "None",
@@ -335,7 +419,6 @@ func getPlanData(memberID : String):
 	var request : HTTPRequest = HTTPRequest.new()
 	request.timeout = 10
 	add_child(request)
-#	print("get plan data")
 	request.request(
 		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Users/"+memberID+"/Plans",
 		["Authorization: Bearer "+ID_TOKEN],
@@ -344,65 +427,113 @@ func getPlanData(memberID : String):
 	
 	var result = await request.request_completed
 	
-	var newestPlan = null
+	# Valid overlapping subscriptions: pick highest catalog tier, not latest end date
+	# (yearly + monthly upgrade → monthly while active, then yearly again).
+	var candidates : Array = []
+	if result[1] == 200:
+		var test_json_conv = JSON.new()
+		test_json_conv.parse(result[3].get_string_from_utf8())
+		var json = test_json_conv.get_data()
+		if json != null and json.has("documents"):
+			var now : int = int(Time.get_unix_time_from_system())
+			for data in json["documents"]:
+				counter += 1.0
+				var fields = data["fields"]
+				if !fields.has("EndTimestamp") || !fields.has("Plan"):
+					continue
+				var plan_str : String = _firestore_scalar(fields["Plan"])
+				var end_str : String = _firestore_scalar(fields["EndTimestamp"])
+				if plan_str.is_empty() or end_str.is_empty():
+					continue
+				var end_time : int = int(end_str)
+				if end_time + PLAN_GRACE_SECONDS < now:
+					continue
+				candidates.append({
+					"Plan": plan_str,
+					"EndTimestamp": end_time,
+					"StartTimestamp": _firestore_scalar(fields.get("StartTimestamp", {})),
+				})
+	
 	var planName : String = "free"
-	
-	if result[1] == 200:
-		var test_json_conv = JSON.new()
-		test_json_conv.parse(result[3].get_string_from_utf8())
-		var json = test_json_conv.get_data()
+	var selected_end : int = -1
+	if !candidates.is_empty():
+		var catalog_by_name : Dictionary = {}
+		for cand in candidates:
+			var name : String = cand["Plan"]
+			if catalog_by_name.has(name):
+				continue
+			catalog_by_name[name] = await _fetch_plan_catalog(request, name)
 		
-		if json != null:
-			if json.has("documents"):
-				for data in json["documents"]:
-					counter += 1.0
-					var fields = data["fields"]
-					if !fields.has("EndTimestamp") || !fields.has("Plan"):
-						continue
-					if !fields["EndTimestamp"].has("stringValue") || !fields["Plan"].has("stringValue"):
-						continue
-					var time = int(fields["EndTimestamp"]["stringValue"])
-					if time < Time.get_unix_time_from_system():
-						continue
-					if newestPlan == null || int(newestPlan["EndTimestamp"]["stringValue"]) < time:
-						newestPlan = fields
-						planName = fields["Plan"]["stringValue"]
-	
-	request.request(
-		"https://firestore.googleapis.com/v1/projects/"+ServerConfigs.PROJECT_ID+"/databases/(default)/documents/Plans/"+planName,
-		["Authorization: Bearer "+ID_TOKEN],
-		HTTPClient.METHOD_GET
-	)
-	
-	result = await request.request_completed
-	
-	if result[1] == 200:
-		var test_json_conv = JSON.new()
-		test_json_conv.parse(result[3].get_string_from_utf8())
-		var json = test_json_conv.get_data()
-		
-		if json != null:
-			counter += 1.0
-			
-			var fields = json["fields"]
-			resultData["Name"] = json["name"].get_file()
-			resultData["DataCap"] = int(fields["DataCap"]["integerValue"])
-			resultData["KeyCap"] = int(fields["KeyCap"]["integerValue"])
-			
-			resultData["DatabaseLimit"] = int(fields["DatabaseLimit"]["integerValue"])
-			resultData["StorageLimit"] = int(fields["StorageLimit"]["integerValue"])
-			
-			if newestPlan:
-				resultData["ResetTime"] = time_until_reset(int(newestPlan["EndTimestamp"]["stringValue"]))
-				resultData["ResetUnix"] = int(newestPlan["EndTimestamp"]["stringValue"])
+		var best = null
+		var best_cap : int = -1
+		var best_players : int = -1
+		var best_end : int = -1
+		for cand in candidates:
+			var cat : Dictionary = catalog_by_name.get(cand["Plan"], {})
+			var cap : int = int(cat.get("DataCap", 0))
+			var players : int = int(cat.get("PlayerLimit", 0))
+			var end_time : int = int(cand["EndTimestamp"])
+			var better : bool = false
+			if best == null:
+				better = true
+			elif cap != best_cap:
+				better = cap > best_cap
+			elif players != best_players:
+				better = players > best_players
 			else:
-				resultData["ResetTime"] = time_until_reset(int(floor(Time.get_unix_time_from_system()/86400)+1)*86400)
-				resultData["ResetUnix"] = int(floor(Time.get_unix_time_from_system()/86400)+1)*86400
+				better = end_time > best_end
+			if better:
+				best = cand
+				best_cap = cap
+				best_players = players
+				best_end = end_time
+		if best != null:
+			planName = best["Plan"]
+			selected_end = int(best["EndTimestamp"])
+			var cat : Dictionary = catalog_by_name.get(planName, {})
+			if !cat.is_empty():
+				resultData["Name"] = cat["Name"]
+				resultData["DataCap"] = cat["DataCap"]
+				resultData["KeyCap"] = cat["KeyCap"]
+				resultData["DatabaseLimit"] = cat["DatabaseLimit"]
+				resultData["StorageLimit"] = cat["StorageLimit"]
+				# During the grace window the real end is already past. The label
+				# counts down to the following cycle, one period after this one.
+				var display_end := selected_end
+				if selected_end < int(Time.get_unix_time_from_system()):
+					var start_unix := int(str(best.get("StartTimestamp", "0")))
+					display_end = selected_end + _plan_period_length(start_unix, selected_end)
+				resultData["ResetTime"] = time_until_reset(display_end)
+				resultData["ResetUnix"] = display_end
+				request.queue_free()
+				var live_name : String = str(resultData.get("Name", "None"))
+				_roll_charts_cache_day()
+				if charts_cache_plan.has(memberID) and str(charts_cache_plan[memberID]) != live_name:
+					invalidate_charts_cache(memberID)
+				return resultData
+	
+	# free / no valid subscription — still load catalog defaults
+	var free_cat : Dictionary = await _fetch_plan_catalog(request, planName)
+	if !free_cat.is_empty():
+		resultData["Name"] = free_cat["Name"]
+		resultData["DataCap"] = free_cat["DataCap"]
+		resultData["KeyCap"] = free_cat["KeyCap"]
+		resultData["DatabaseLimit"] = free_cat["DatabaseLimit"]
+		resultData["StorageLimit"] = free_cat["StorageLimit"]
+	# MonthlyDataCap is absent until the rollout writes it. Until then the free
+	# plan keeps the daily cap and the next-midnight reset.
+	var monthlyCap : int = int(free_cat.get("MonthlyDataCap", 0)) if !free_cat.is_empty() else 0
+	if monthlyCap > 0:
+		resultData["DataCap"] = monthlyCap
+		await _apply_free_cycle_reset(resultData, memberID)
+	else:
+		resultData["ResetTime"] = time_until_reset(int(floor(Time.get_unix_time_from_system()/86400)+1)*86400)
+		resultData["ResetUnix"] = int(floor(Time.get_unix_time_from_system()/86400)+1)*86400
 	
 	request.queue_free()
-	var live_name : String = str(resultData.get("Name", "None"))
+	var live_name2 : String = str(resultData.get("Name", "None"))
 	_roll_charts_cache_day()
-	if charts_cache_plan.has(memberID) and str(charts_cache_plan[memberID]) != live_name:
+	if charts_cache_plan.has(memberID) and str(charts_cache_plan[memberID]) != live_name2:
 		invalidate_charts_cache(memberID)
 	return resultData
 
